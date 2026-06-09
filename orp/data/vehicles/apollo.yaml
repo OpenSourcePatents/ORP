@@ -1,0 +1,52 @@
+# ORP vehicle definition — Apollo Command Module (CM)
+# Earth reentry, lifting capsule. Every property carries a validation level and a source.
+# Canonical units: mass kg, area m^2, length m, coefficients dimensionless, angles radians.
+name: Apollo Command Module
+intended_planet: earth
+description: >
+  Apollo Block II Command Module — a 33° blunted sphere-cone capsule that performed
+  guided, lifting reentry from lunar return. Trimmed off-axis CG gives a modest L/D used
+  for downrange control by banking. Reference values below are nominal hypersonic figures.
+
+properties:
+  mass:
+    value: 5560.0
+    unit: kg
+    validation: VERIFIED_FLIGHT
+    source: "NASA Apollo Operations Handbook / postflight mass properties (CM entry mass)"
+    notes: "Representative entry mass of the Command Module after CM/SM separation."
+
+  reference_area:
+    value: 12.017
+    unit: m^2
+    validation: ASSERTED
+    source: "Derived from max heatshield diameter 3.912 m (S = pi/4 * d^2)"
+    notes: "Aerodynamic reference area = maximum cross-sectional area."
+
+  nose_radius:
+    value: 4.694
+    unit: m
+    validation: ASSERTED
+    source: "Apollo CM heatshield spherical-segment radius of curvature"
+    notes: "Effective nose radius for stagnation-point heating (Sutton-Graves)."
+
+  drag_coefficient:
+    value: 1.29
+    unit: ""
+    validation: ASSERTED
+    source: "Apollo aerodynamic data book — hypersonic trimmed C_D"
+    notes: "Nominal hypersonic, continuum-flow drag coefficient at trim."
+
+  lift_to_drag:
+    value: 0.368
+    unit: ""
+    validation: VERIFIED_FLIGHT
+    source: "Apollo flight-reconstructed trimmed L/D"
+    notes: "Hypersonic trimmed lift-to-drag ratio used for entry guidance."
+
+  trim_angle_of_attack:
+    value: 0.4363
+    unit: rad
+    validation: ASSERTED
+    source: "Apollo CM trim attitude (~25 deg)"
+    notes: "Trim angle of attack ~= 25 deg, set by the offset center of gravity."

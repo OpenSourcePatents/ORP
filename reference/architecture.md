@@ -7,6 +7,17 @@ inspection of the `core/src/main/java/info/openrocket/core/simulation/`
 package. Signatures are quoted verbatim (signatures only). Java method bodies
 are described, not pasted.
 
+> **ORP forward-only note (read before porting anything from this doc).**
+> This document *describes OpenRocket*; it is not a to-do list for ORP. ORP mirrors the
+> **forward-integration** patterns here (engine/stepper split, status/conditions, the
+> flight-data column store, pluggable environment/aero strategies) and **deliberately omits
+> OpenRocket's optimum/inverse machinery**, which solves "find the X that achieves condition
+> Y" — precisely the inverse problem ORP forbids. In particular, do **not** port:
+> `computeCoastTime()` / the nested coast simulation / `OptimumCoastListener` (§1.5–1.6), the
+> `FlightDataBranch` optimum-altitude bookkeeping (`get/setOptimumAltitude`,
+> `getOptimumDelay`, §6.2), or the `optimumDelay` term in `calculateInterestingValues` (§6.4).
+> These are flagged inline below as `[ORP: do not port — inverse/optimization]`.
+
 ## 0. Big picture and design patterns
 
 The simulation is split into two cleanly separated responsibilities:
@@ -189,7 +200,8 @@ motor ever ignited it aborts (`NO_MOTORS_FIRED`).
   motor is still thrusting (`DEPLOY_UNDER_THRUST`); warn on launch-rod /
   high-speed deployment; add device to `deployedRecoveryDevices`; if apogee not
   reached, run a **nested coast simulation** (`computeCoastTime()`) to find the
-  optimum altitude; **switch to `landingStepper`** and re-`initialize`.
+  optimum altitude `[ORP: do not port — inverse/optimization]`; **switch to
+  `landingStepper`** and re-`initialize`.
 - **GROUND_HIT** — set `landed`; take one final `step(status, Double.NaN)` to
   freeze impact values; switch to `groundStepper`; re-`initialize`.
 - **SIM_ABORT** — `storeData()`, record event, return `false`.
@@ -217,6 +229,8 @@ private FlightData computeCoastTime() throws SimulationException
 - `computeCoastTime` — clones conditions, strips user listeners, adds the system
   `OptimumCoastListener`, runs a whole **nested** `BasicEventSimulationEngine`
   to determine optimum (coast-to-apogee) altitude/time for delay optimization.
+  `[ORP: do not port — inverse/optimization. Running a nested engine to "find the
+  X that achieves condition Y" is the inverse problem ORP forbids.]`
 
 ### 1.7 Termination conditions (summary)
 
@@ -564,6 +578,7 @@ per stage. Adds:
 - Optimum-altitude bookkeeping: `get/setOptimumAltitude`,
   `get/setTimeToOptimumAltitude`, `getOptimumDelay()` (optimum time − last
   burnout), `getSeparationTime()`.
+  `[ORP: do not port the optimum-* fields — inverse/optimization]`
 - Constructors: `(String name, FlightDataType... types)`; a copy constructor
   `(String name, RocketComponent srcComponent, FlightDataBranch parent)` that
   copies all parent rows + this stage's events (used at stage separation so the
@@ -599,8 +614,8 @@ public void immute();
 `maxMachNumber`, `flightTime`, `timeToApogee`, `maxAcceleration` (pre-first-
 deployment), and interpolates `launchRodVelocity` / `deploymentVelocity` /
 `groundHitVelocity` at the times of the LAUNCHROD / RECOVERY_DEVICE_DEPLOYMENT /
-GROUND_HIT events, plus `optimumDelay`. `FlightData.NaN_DATA` is a shared
-immutable all-NaN instance.
+GROUND_HIT events, plus `optimumDelay` `[ORP: do not port — inverse/optimization]`.
+`FlightData.NaN_DATA` is a shared immutable all-NaN instance.
 
 ---
 

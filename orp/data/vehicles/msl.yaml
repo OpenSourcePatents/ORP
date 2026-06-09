@@ -1,0 +1,53 @@
+# ORP vehicle definition — Mars Science Laboratory (MSL) aeroshell
+# Mars reentry, 70-degree sphere-cone. Every property carries a validation level and source.
+# Canonical units: mass kg, area m^2, length m, coefficients dimensionless, angles radians.
+name: MSL Aeroshell
+intended_planet: mars
+description: >
+  Mars Science Laboratory entry aeroshell (delivered the Curiosity rover) — a 70 deg
+  sphere-cone, 4.5 m base diameter, the first Mars entry to use guided, lifting,
+  bank-controlled flight (an offset CG gives a small L/D). Reference values below are
+  nominal hypersonic figures.
+
+properties:
+  mass:
+    value: 3257.0
+    unit: kg
+    validation: VERIFIED_FLIGHT
+    source: "MSL Entry, Descent and Landing reconstruction (entry mass)"
+    notes: "Entry mass of the MSL aeroshell + descent stage + rover at atmospheric interface."
+
+  reference_area:
+    value: 15.904
+    unit: m^2
+    validation: ASSERTED
+    source: "Derived from 4.5 m base diameter (S = pi/4 * d^2)"
+    notes: "Aerodynamic reference area = aeroshell base area."
+
+  nose_radius:
+    value: 1.125
+    unit: m
+    validation: ASSERTED
+    source: "70 deg sphere-cone with nose-to-base radius ratio Rn/Rb = 0.5, Rb = 2.25 m"
+    notes: "Effective nose radius for stagnation-point heating (Sutton-Graves)."
+
+  drag_coefficient:
+    value: 1.68
+    unit: ""
+    validation: ASSERTED
+    source: "MSL aerodynamic database — hypersonic trimmed C_D for a 70 deg sphere-cone"
+    notes: "Nominal hypersonic, continuum-flow drag coefficient at trim."
+
+  lift_to_drag:
+    value: 0.24
+    unit: ""
+    validation: VERIFIED_FLIGHT
+    source: "MSL flight-reconstructed trimmed L/D"
+    notes: "Hypersonic trimmed lift-to-drag ratio used for guided entry."
+
+  trim_angle_of_attack:
+    value: 0.2793
+    unit: rad
+    validation: ASSERTED
+    source: "MSL trim attitude (~16 deg)"
+    notes: "Trim angle of attack ~= 16 deg, set by the offset center of gravity (ballast)."
