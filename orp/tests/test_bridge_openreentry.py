@@ -42,7 +42,7 @@ _REF_CORE = Path(__file__).resolve().parents[2] / "ref_core"
 if not _REF_CORE.is_dir():
     pytest.skip(
         "ref_core/ reference clone not present (git clone "
-        "C:/Users/cjdow/projects/openre/openreentry ref_core --branch master)",
+        "<path-to-local-openreentry-clone> ref_core --branch master)",
         allow_module_level=True,
     )
 pytest.importorskip("scipy", reason="the openreentry reference requires scipy")

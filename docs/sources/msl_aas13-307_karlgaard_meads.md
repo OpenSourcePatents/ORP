@@ -4,7 +4,7 @@
 **Citation.** Karlgaard et al., "Mars Science Laboratory Entry, Descent, and Landing
 Trajectory and Atmosphere Reconstruction" (MEADS/MEDLI Kalman-filter reconstruction),
 AAS 13-307.
-**NTRS accession:** `20130010087` (PDF at `C:\Users\cjdow\projects\openre\sources\`;
+**NTRS accession:** `20130010087` (PDF retrieved from NTRS under that accession;
 confirmed 2026-06-10). NOTE: the pinned OpenReentry clone (`ref_core/README.md`) cites
 the same paper as NTRS `20130003195` (and J. Spacecraft & Rockets, 10.2514/1.A32770) —
 two accessions appear to exist; the discrepancy is recorded, not adjudicated.

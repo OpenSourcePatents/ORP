@@ -295,8 +295,8 @@ Each integration sub-step, given current `time`, AGL/MSL altitude, and world pos
 Compute aerodynamic force from `0.5 * density * v² * area * Cd(...)` (drag), gravitational force
 from `mass * gravity` downward, integrate.
 
-### Key file references (absolute paths)
-- `C:\Users\cjdow\Projects\OpenReentryApp\core\src\main\java\info\openrocket\core\models\atmosphere\AtmosphericModel.java`
+### Key file references (paths relative to the OpenReentryApp repo root)
+- `core\src\main\java\info\openrocket\core\models\atmosphere\AtmosphericModel.java`
 - `...\models\atmosphere\AtmosphericConditions.java`
 - `...\models\atmosphere\ExtendedISAModel.java`
 - `...\models\atmosphere\InterpolatingAtmosphericModel.java`

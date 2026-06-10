@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [
-    { name = "Charles W. Dowd Jr.", email = "bedbugcharlie@gmail.com" },
+    { name = "Charles W. Dowd Jr.", email = "opensourcepatents@gmail.com" },
 ]
 keywords = [
     "reentry",

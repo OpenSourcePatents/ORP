@@ -15,7 +15,7 @@ reference clone or scipy is absent).
 
 | Field | Value |
 |---|---|
-| Source | `git clone C:\Users\cjdow\projects\openre\openreentry ref_core --branch master` |
+| Source | `git clone <path-to-local-openreentry-clone> ref_core --branch master` |
 | Pinned commit | `8ccb88d` — "Document rotation cost and harden scope boundary" |
 | Location | `ref_core/` in the ORP repo root (gitignored — a pinned working copy, not vendored code; the live openreentry tree is never touched) |
 | Reference engine | `openreentry.py`: planar 3-DOF state [r, V, γ, s], scipy `solve_ivp` RK45, rtol = atol = 1e-9, dense output |
