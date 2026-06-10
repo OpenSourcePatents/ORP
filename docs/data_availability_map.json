@@ -1,0 +1,79 @@
+{
+  "_SPDX-License-Identifier": "GPL-3.0-or-later",
+  "_README": "ORP per-flight data availability map. Records, per reentry flight, which gate-truth and vehicle-property data are publicly sourceable and at what fidelity. Mirrors the pattern of OpenReentry's data_availability_map.json (pinned reference at ref_core/, NOT vendored). Source tags: 'text'=stated in a report's prose/tables (directly sourceable); 'fig'=figure-only, needs digitization before use; 'lit'=in analysis/CFD literature, source carefully; 'controlled'=export/availability barrier; 'na'=not applicable. Forward-only wall: bank schedules are inputs, crossrange is an output; nothing here is a target to solve for.",
+  "_provenance_levels": "Mirror orp.core.provenance.tags.ValidationLevel: NOT_VALIDATED < ASSERTED < VERIFIED_SOURCE < VERIFIED_CFD < VERIFIED_FLIGHT.",
+  "flights": {
+    "stardust_src": {
+      "name": "Stardust Sample Return Capsule",
+      "date": "2006-01-15",
+      "planet": "Earth",
+      "type": "ballistic 60-deg sphere-cone (sample return)",
+      "why_key": "Fastest Earth entry ever (~12.9 km/s inertial / ~12.6 km/s planet-relative). Ballistic (L/D~0), spin-stabilized. Deliberate aerothermal benchmark, geometry well documented.",
+      "vehicle_geometry": {
+        "forebody": {"value": "60-deg half-angle sphere-cone", "src": "text: Mitcheltree AIAA 97-2304 (NTRS 20040105538)"},
+        "nose_radius_m": {"value": 0.2286, "src": "text: Mitcheltree AIAA 97-2304"},
+        "shoulder_radius_m": {"value": 0.01905, "src": "text: Mitcheltree AIAA 97-2304"},
+        "base_diameter_m": {"value": 0.8128, "src": "text: Mitcheltree AIAA 97-2304"},
+        "reference_area_m2": {"value": 0.51887, "src": "text: Mitcheltree AIAA 97-2304 (frontal area)"},
+        "afterbody": {"value": "30-deg cone, flat stern", "src": "text: Mitcheltree AIAA 97-2304"},
+        "cg_back_from_nose_D": {"value": 0.35, "src": "text: Mitcheltree AIAA 97-2304 (as-flown c.g.; unstable about c.p.; recommended forward to ~0.26D)"}
+      },
+      "aero": {
+        "CD_hypersonic_continuum": {"value": 1.61, "src": "text/table: Mitcheltree AIAA 97-2304 zero-AoA axial coefficient ~1.61 (continuum, M>12); full CD-vs-Mach is fig/table, partly digitizable"},
+        "CD_vs_Mach": {"value": null, "src": "fig: Mitcheltree AIAA 97-2304 CFD/tunnel; decreases below M~12 (sonic-line shift); needs digitization for a full table"},
+        "lift_to_drag": {"value": 0.0, "src": "lit: ballistic, spin-stabilized"}
+      },
+      "gate_truths": {
+        "_note": "Reconstruction values supplied to ORP as Phase-3 inputs; treat as ASSERTED pending a pinned primary citation.",
+        "drogue_deploy_s": {"value": 137.9, "src": "lit: Stardust EI+ entry reconstruction"},
+        "mach_1p23_altitude_km": {"value": 31.03, "src": "lit: reconstruction"},
+        "peak_deceleration_g": {"value": 32.89, "src": "lit: reconstruction", "three_sigma": 3.64},
+        "entry_inertial_velocity_km_s": {"value": 12.9, "src": "lit: reconstruction; planet-relative ~12.6"},
+        "entry_fpa_deg": {"value": -8.2, "src": "lit: reconstruction (inertial)"},
+        "entry_azimuth_deg": {"value": 102.9, "src": "lit: reconstruction"},
+        "entry_radius_km": {"value": 6503.14, "src": "lit: reconstruction"},
+        "mass_kg": {"value": 46.0, "src": "lit: commonly cited; Phase-3 input"},
+        "spin_rpm": {"value": 13.5, "src": "lit: spin-stabilized; Phase-3 input"},
+        "ei_latitude_deg": {"value": null, "src": "ABSENT from primary text -- swept as an assumption in the Stardust experiment"}
+      },
+      "aerothermal_source": {"value": "Trumble AIAA 2008-1201 / JSR 47(5) 2010 doi:10.2514/1.41514", "src": "ABSENT from NTRS as of 2026-06-10 search; available via AIAA ARC / ResearchGate"},
+      "primary_to_get": "Desai & Qualls Stardust entry reconstruction; Mitcheltree AIAA 97-2304 (geometry, have)"
+    },
+    "artemis_i_orion": {
+      "name": "Artemis I (Orion) skip entry",
+      "date": "2022-12-11",
+      "planet": "Earth",
+      "type": "lifting blunt capsule, bank-managed skip entry",
+      "why_key": "Highest-energy crewed-class Earth return profile; lateral/skip dynamics are the Gate 3 target.",
+      "gate_truths": {
+        "_source": "AAS 24-174, Table 1 (EI state), Table 2 (phase times), Table 3 (bank reversal times), Table 4 (splashdown), skip apogee 287.4 kft.",
+        "ei_inertial_velocity_m_s": {"value": 10991.9, "src": "text: AAS 24-174 Table 1"},
+        "ei_fpa_inertial_deg": {"value": -5.66367, "src": "text: AAS 24-174 Table 1"},
+        "ei_azimuth_inertial_deg": {"value": 4.65389, "src": "text: AAS 24-174 Table 1"},
+        "ei_latitude_deg": {"value": -25.82847, "src": "text: AAS 24-174 Table 1"},
+        "ei_longitude_deg": {"value": -120.08071, "src": "text: AAS 24-174 Table 1"},
+        "ei_altitude_ft": {"value": 400000.0, "src": "text: AAS 24-174 Table 1"},
+        "skip_apogee_kft": {"value": 287.4, "src": "text: AAS 24-174"},
+        "bank_schedule": {"value": null, "src": "fig: AAS 24-174 Fig 12(a) -- bank command, FIGURE-ONLY; reversal TIMES are in Table 3 but the initial sign is not text-locked (see convention-laundering rule)"}
+      },
+      "vehicle": {
+        "mass_kg_range": {"value": [9934, 10387], "src": "text: McNamara NTRS 20140004224 (Orion design mass range)"},
+        "lift_to_drag_range": {"value": [0.23, 0.27], "src": "text: McNamara NTRS 20140004224"},
+        "aero_source": {"value": "Bibb NTRS 20110013644", "src": "text: Orion aerodynamic database paper"}
+      },
+      "status": "trajectory: Tables 1-4 text-sourced. heating: controlled/plot. bank command: Fig 12(a) un-digitized -> Gate 3 NOT_VALIDATED."
+    },
+    "msl_curiosity": {
+      "name": "MSL (Curiosity)",
+      "planet": "Mars",
+      "type": "guided blunt 70-deg sphere-cone",
+      "why_key": "Best-instrumented entry ever (MEDLI); guided, bank-managed entry. Separate population from Earth (CO2 gas).",
+      "sources": {
+        "commanded_bank_profile": {"value": null, "src": "fig/text: Mendeck & McGrew AAS 13-419 (NTRS 20130009519) -- Apollo final-phase logic; bank-angle command histories are figures, not yet digitized"},
+        "reconstructed_aerodynamics": {"value": null, "src": "fig/table: Schoenenberger et al. AAS 13-306 (NTRS 20130010088) -- C_A/C_N/C_m vs Mach from IMU + heatshield pressures; figures/tables, not yet digitized"},
+        "landing_accuracy_km": {"value": 2.2, "src": "text: Mendeck & McGrew AAS 13-419"}
+      },
+      "status": "vehicle modeled in msl.yaml (geometry/aero ASSERTED). Bank profile + reconstructed aero remain figure-based; a Mars Gate is future work."
+    }
+  }
+}
