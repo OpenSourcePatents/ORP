@@ -24,12 +24,24 @@ import numpy as np
 from orp.core.aerodynamics.calculator import AerodynamicForces
 from orp.core.aerodynamics.flight_conditions import FlightConditions
 from orp.core.simulation import flight_data as fd
-from orp.core.simulation.status import STATE_SIZE, SimulationStatus
+from orp.core.simulation.status import (
+    IDX_ALTITUDE,
+    IDX_FLIGHT_PATH_ANGLE,
+    IDX_HEADING,
+    IDX_LATITUDE,
+    IDX_LONGITUDE,
+    IDX_VELOCITY,
+    STATE_SIZE,
+    SimulationStatus,
+)
 
 __all__ = ["SimulationStepper", "RK4Stepper"]
 
 #: Standard gravity used only to express deceleration as a "g" load (a reporting unit).
 _STANDARD_GRAVITY = 9.80665
+
+#: Below this speed the angular-rate equations (which divide by V) are frozen to avoid blow-up.
+_MIN_SPEED_FOR_ANGLE_RATES = 1.0e-3
 
 
 class SimulationStepper(ABC):
@@ -87,13 +99,12 @@ class SimulationStepper(ABC):
         )
 
     def compute_derivatives(self, status: SimulationStatus) -> np.ndarray:
-        """Return d/dt of the six-element state vector (the equation-of-motion seam).
+        """Return d/dt of the six-element state vector — the 3-DOF entry equations of motion.
 
-        --- PHYSICS SEAM ---
-        Returns zeros. The real 3-DOF planet-relative equations of motion over a rotating
-        spherical planet (state order: altitude h, latitude φ, longitude θ, speed V,
+        The 3-DOF planet-relative equations of motion over a rotating spherical planet are
+        implemented here (state order: altitude h, latitude φ, longitude θ, speed V,
         flight-path angle γ, heading ψ; with bank σ, lift L = C_L·q·S, drag D = C_D·q·S,
-        mass m, gravity g, planet rate ω, radius r = R + h) are::
+        mass m, gravity g, planet rate ω, radius r = R + h)::
 
             dh/dt = V·sinγ
             dφ/dt = V·cosγ·cosψ / r
@@ -107,28 +118,81 @@ class SimulationStepper(ABC):
                     − 2·ω·V·(tanγ·cosφ·cosψ − sinφ)
                     + (ω²·r/cosγ)·sinφ·cosφ·sinψ ]
 
-        Everything those equations need is already wired below; only the final assignment is
-        a placeholder. Note σ enters solely as a *replayed* control (``status.bank_angle``),
-        never as an unknown to solve for — that is the forward-only wall in physics form.
+        The bank angle σ enters solely as a *replayed* control (``status.bank_angle``) that
+        rotates the lift vector — ``L·cosσ`` raises/lowers the flight-path angle and ``L·sinσ``
+        steers the heading. σ is never an unknown solved for: that is the forward-only wall in
+        physics form. Every planet-specific quantity (gravity, ω, radius, atmosphere) flows
+        from the injected :class:`~orp.core.planet.planet.Planet`.
         """
         conditions = status.conditions
+        planet = conditions.planet
         flight_conditions = self.build_flight_conditions(status)
         forces = self.compute_aerodynamic_forces(status, flight_conditions)
 
-        # The quantities the real EOM consume (computed now so the seam is fully wired).
-        # Every planet-specific value flows from the injected Planet — nothing is Earth-baked.
-        mass = conditions.vehicle.mass.get()  # noqa: F841
-        gravity = conditions.planet.gravity.get_gravity(status.world_position())  # noqa: F841
-        rotation_rate = conditions.planet.rotation_rate  # noqa: F841  (ω, Coriolis/centrifugal)
-        radius = status.radius()  # noqa: F841  (r = planet mean radius + altitude)
+        mass = conditions.vehicle.mass.get()
+        gravity = planet.gravity.get_gravity(status.world_position())
+        omega = planet.rotation_rate
+        radius = status.radius()
         dynamic_pressure = flight_conditions.dynamic_pressure
         reference_area = flight_conditions.reference_area
-        drag = forces.drag_force(dynamic_pressure, reference_area)  # noqa: F841
-        lift = forces.lift_force(dynamic_pressure, reference_area)  # noqa: F841
-        bank = status.bank_angle  # noqa: F841  (replayed control, never solved for)
+        drag = forces.drag_force(dynamic_pressure, reference_area)
+        lift = forces.lift_force(dynamic_pressure, reference_area)
 
-        # SEAM: replace these zeros with the equations documented above.
-        return np.zeros(STATE_SIZE, dtype=float)
+        velocity = status.velocity
+        gamma = status.flight_path_angle
+        heading = status.heading
+        latitude = status.latitude
+        bank = status.bank_angle  # replayed control σ — never solved for (forward-only)
+
+        sin_gamma, cos_gamma = math.sin(gamma), math.cos(gamma)
+        sin_psi, cos_psi = math.sin(heading), math.cos(heading)
+        sin_phi, cos_phi = math.sin(latitude), math.cos(latitude)
+        sin_sigma, cos_sigma = math.sin(bank), math.cos(bank)
+
+        # Guard the singular denominators at the poles (cosφ→0) and vertical flight (cosγ→0).
+        cos_phi_safe = cos_phi if abs(cos_phi) > 1e-8 else math.copysign(1e-8, cos_phi or 1.0)
+        cos_gamma_safe = cos_gamma if abs(cos_gamma) > 1e-8 else math.copysign(1e-8, cos_gamma or 1.0)
+
+        # Kinematics.
+        d_altitude = velocity * sin_gamma
+        d_latitude = velocity * cos_gamma * cos_psi / radius
+        d_longitude = velocity * cos_gamma * sin_psi / (radius * cos_phi_safe)
+
+        # Velocity: aerodynamic drag, gravity, and the centrifugal transport term.
+        d_velocity = (
+            -drag / mass
+            - gravity * sin_gamma
+            + omega * omega * radius * cos_phi * (sin_gamma * cos_phi - cos_gamma * sin_phi * cos_psi)
+        )
+
+        if velocity > _MIN_SPEED_FOR_ANGLE_RATES:
+            inv_v = 1.0 / velocity
+            # Flight-path angle: vertical lift (L·cosσ), gravity, curvature, Coriolis, centrifugal.
+            d_gamma = inv_v * (
+                lift * cos_sigma / mass
+                + (velocity * velocity / radius - gravity) * cos_gamma
+                + 2.0 * omega * velocity * cos_phi * sin_psi
+                + omega * omega * radius * cos_phi * (cos_gamma * cos_phi + sin_gamma * sin_phi * cos_psi)
+            )
+            # Heading: horizontal lift (L·sinσ), curvature, Coriolis, centrifugal.
+            d_heading = inv_v * (
+                lift * sin_sigma / (mass * cos_gamma_safe)
+                + velocity * velocity / radius * cos_gamma * sin_psi * sin_phi / cos_phi_safe
+                - 2.0 * omega * velocity * (sin_gamma / cos_gamma_safe * cos_phi * cos_psi - sin_phi)
+                + omega * omega * radius / cos_gamma_safe * sin_phi * cos_phi * sin_psi
+            )
+        else:
+            d_gamma = 0.0
+            d_heading = 0.0
+
+        derivative = np.empty(STATE_SIZE, dtype=float)
+        derivative[IDX_ALTITUDE] = d_altitude
+        derivative[IDX_LATITUDE] = d_latitude
+        derivative[IDX_LONGITUDE] = d_longitude
+        derivative[IDX_VELOCITY] = d_velocity
+        derivative[IDX_FLIGHT_PATH_ANGLE] = d_gamma
+        derivative[IDX_HEADING] = d_heading
+        return derivative
 
     def record_point(self, status: SimulationStatus) -> None:
         """Write one full data row: kinematics (via the status) plus derived physics channels.
@@ -151,18 +215,31 @@ class SimulationStepper(ABC):
         lift = forces.lift_force(dynamic_pressure, reference_area)
         gravity = conditions.planet.gravity.get_gravity(status.world_position())
         mass = conditions.vehicle.mass.get()
-        deceleration_g = drag / (mass * _STANDARD_GRAVITY) if mass > 0 else 0.0
+
+        # Sensed deceleration (g-load) = total aerodynamic force / weight-equivalent.
+        aero_load = math.hypot(drag, lift)
+        deceleration_g = aero_load / (mass * _STANDARD_GRAVITY) if mass > 0 else 0.0
+
+        # Sutton-Graves stagnation-point convective heating: q̇ = k·√(ρ/R_n)·V³ (W/m²),
+        # with the planet's gas-specific Sutton-Graves constant (Earth air vs Mars CO₂).
+        density = flight_conditions.atmosphere.density
+        nose_radius = conditions.vehicle.nose_radius.get()
+        heat_rate = 0.0
+        if density > 0.0 and nose_radius > 0.0:
+            heat_rate = (
+                conditions.planet.sutton_graves_constant
+                * math.sqrt(density / nose_radius)
+                * status.velocity**3
+            )
 
         branch.set_value(fd.TYPE_MACH, flight_conditions.mach)
         branch.set_value(fd.TYPE_DYNAMIC_PRESSURE, dynamic_pressure)
-        branch.set_value(fd.TYPE_DENSITY, flight_conditions.atmosphere.density)
+        branch.set_value(fd.TYPE_DENSITY, density)
         branch.set_value(fd.TYPE_DRAG_FORCE, drag)
         branch.set_value(fd.TYPE_LIFT_FORCE, lift)
         branch.set_value(fd.TYPE_GRAVITY, gravity)
         branch.set_value(fd.TYPE_DECELERATION, deceleration_g)
-        # --- PHYSICS SEAM --- stagnation heat rate (Sutton-Graves):
-        #   qdot = k * sqrt(rho / R_nose) * V^3,  k_earth ~ 1.7415e-4 (SI).
-        branch.set_value(fd.TYPE_HEAT_RATE, 0.0)
+        branch.set_value(fd.TYPE_HEAT_RATE, heat_rate)
 
 
 class RK4Stepper(SimulationStepper):

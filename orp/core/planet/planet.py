@@ -76,6 +76,9 @@ class Planet:
         gravitational_parameter: Standard gravitational parameter μ = G·M, m³/s²
             (for orbital/entry-interface bookkeeping).
         surface_pressure: Reference surface pressure, Pa (informational).
+        sutton_graves_constant: Sutton-Graves stagnation-point convective-heating constant
+            ``k`` for this planet's gas, such that ``q̇ = k·√(ρ/R_n)·V³`` (W/m²). Earth air
+            ≈ 1.7415e-4; Mars CO₂ ≈ 1.9027e-4.
     """
 
     name: str
@@ -85,6 +88,7 @@ class Planet:
     rotation_rate: float
     gravitational_parameter: float
     surface_pressure: float = 0.0
+    sutton_graves_constant: float = 1.7415e-4
 
     def radius_at(self, altitude: float) -> float:
         """Return the geocentric/areocentric radius (m) for a given altitude above surface."""
