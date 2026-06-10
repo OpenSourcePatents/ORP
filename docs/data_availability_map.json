@@ -55,7 +55,7 @@
         "ei_longitude_deg": {"value": -120.08071, "src": "text: AAS 24-174 Table 1"},
         "ei_altitude_ft": {"value": 400000.0, "src": "text: AAS 24-174 Table 1"},
         "skip_apogee_kft": {"value": 287.4, "src": "text: AAS 24-174"},
-        "bank_schedule": {"value": null, "src": "fig: AAS 24-174 Fig 12(a) -- bank command, FIGURE-ONLY; reversal TIMES are in Table 3 but the initial sign is not text-locked (see convention-laundering rule)"}
+        "bank_schedule": {"value": "data/flights/artemis1_bank_commanded.csv", "src": "fig->MACHINE-DIGITIZED 2026-06-10: AAS 24-174 Fig 12(a) blue commanded trace, native-raster pixel extraction; all six Table-3 reversal times reproduced within 0.67 s; initial segment +14.9 deg matches the p.4 'pre-selected 0 deg limited to 15 deg' statement; methods+uncertainty in docs/digitization/artemis1_bank_commanded.md; sign is plotted-sign-only until the Gate-3 crossrange lock"}
       },
       "vehicle": {
         "mass_kg_range": {"value": [9934, 10387], "src": "text: McNamara NTRS 20140004224 (Orion design mass range)"},
