@@ -50,3 +50,13 @@ properties:
     validation: ASSERTED
     source: "Apollo CM trim attitude (~25 deg)"
     notes: "Trim angle of attack ~= 25 deg, set by the offset center of gravity."
+
+  half_cone_angle:
+    value: 0.5760
+    unit: rad
+    validation: ASSERTED
+    source: "Apollo CM forebody (spherical-segment heatshield) approximated for Newtonian aero"
+    notes: >
+      ~33 deg. The Apollo forebody is actually a spherical segment (nose radius 4.694 m >
+      base radius 1.956 m), so the Modified Newtonian model treats it as a spherical cap;
+      this angle only keeps the body a cap. L/D at zero AoA is 0 by axisymmetry regardless.

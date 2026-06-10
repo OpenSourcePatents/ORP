@@ -51,3 +51,10 @@ properties:
     validation: ASSERTED
     source: "MSL trim attitude (~16 deg)"
     notes: "Trim angle of attack ~= 16 deg, set by the offset center of gravity (ballast)."
+
+  half_cone_angle:
+    value: 1.2217
+    unit: rad
+    validation: ASSERTED
+    source: "MSL 70-degree sphere-cone forebody (DGB heritage)"
+    notes: "70 deg cone half-angle measured from the axis (a 70-deg sphere-cone)."

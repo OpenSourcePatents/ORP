@@ -24,6 +24,7 @@ engine — and this codebase — does.
 
 from __future__ import annotations
 
+from orp.core.provenance.tags import weakest
 from orp.core.simulation.conditions import SimulationConditions
 from orp.core.simulation.flight_data import (
     ALL_TYPES,
@@ -69,7 +70,9 @@ class SimulationEngine:
             weakest of the contributing inputs (see
             :meth:`~orp.core.simulation.conditions.SimulationConditions.provenance`).
         """
-        run_provenance = conditions.provenance
+        # The equations of motion are themselves a provenanced model: the run can be no
+        # better validated than the EOM that produced it (weakest link, like every input).
+        run_provenance = weakest([conditions.provenance, self.stepper.provenance])
 
         branch = FlightDataBranch("Reentry", types=ALL_TYPES)
         branch.provenance = run_provenance

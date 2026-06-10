@@ -16,9 +16,9 @@ metadata recording what the definition was authored for.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from orp.core.provenance.tags import ProvenanceTag, TaggedValue, weakest
+from orp.core.provenance.tags import ProvenanceTag, TaggedValue, ValidationLevel, weakest
 
 __all__ = ["EntryVehicle"]
 
@@ -41,6 +41,9 @@ class EntryVehicle:
         drag_coefficient: Nominal hypersonic drag coefficient C_D (dimensionless).
         lift_to_drag: Nominal lift-to-drag ratio L/D (dimensionless; 0 ⇒ ballistic).
         trim_angle_of_attack: Trim angle of attack, radians.
+        half_cone_angle: Forebody sphere-cone half-angle (radians, measured from the axis),
+            used by the Modified Newtonian aerodynamics. For a near-spherical capsule (nose
+            radius ≥ base radius) the value only needs to keep the body a spherical segment.
         intended_planet: Metadata — the planet this definition was authored for.
         description: Free-text description / notes.
     """
@@ -52,6 +55,12 @@ class EntryVehicle:
     drag_coefficient: TaggedValue[float]
     lift_to_drag: TaggedValue[float]
     trim_angle_of_attack: TaggedValue[float]
+    half_cone_angle: TaggedValue[float] = field(
+        default_factory=lambda: TaggedValue(
+            value=0.0,
+            provenance=ProvenanceTag(ValidationLevel.NOT_VALIDATED, notes="Not specified."),
+        )
+    )
     intended_planet: str = "earth"
     description: str = ""
 
@@ -68,6 +77,7 @@ class EntryVehicle:
             "drag_coefficient": self.drag_coefficient,
             "lift_to_drag": self.lift_to_drag,
             "trim_angle_of_attack": self.trim_angle_of_attack,
+            "half_cone_angle": self.half_cone_angle,
         }
 
     @property

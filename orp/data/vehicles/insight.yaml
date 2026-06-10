@@ -1,0 +1,74 @@
+# ORP vehicle definition — Mars InSight entry aeroshell
+# Mars reentry, 70-degree sphere-cone (Phoenix heritage). Every property carries a
+# validation level and source.
+# Canonical units: mass kg, area m^2, length m, coefficients dimensionless, angles radians.
+name: InSight Aeroshell
+intended_planet: mars
+description: >
+  Mars InSight entry vehicle (landed the InSight seismology station, 2018) — a 70 deg
+  sphere-cone of 2.65 m base diameter, Phoenix heritage, flown as an unguided,
+  non-spinning, nominally ballistic entry (no bank control; hypersonic trim at zero
+  angle of attack with an on-axis CG). Flight reconstruction: Karlgaard et al., NASA
+  NTRS 20200003204 (peak deceleration 8.13 g; landed 12.3 km uprange, 6.1 km crossrange
+  of target). The aerodynamic database was identical to Phoenix (Edquist et al., NTRS
+  20080034648).
+
+properties:
+  mass:
+    value: 605.6
+    unit: kg
+    validation: VERIFIED_FLIGHT
+    source: "Karlgaard et al., 'Mars InSight EDL Trajectory and Atmosphere Reconstruction', NASA NTRS 20200003204, p. 2 (entry mass)"
+    notes: "Mass at atmospheric entry, as stated in the flight reconstruction."
+
+  reference_area:
+    value: 5.5155
+    unit: m^2
+    validation: ASSERTED
+    source: "Derived from 2.65 m base diameter (S = pi/4 * d^2); diameter per NTRS 20200003204, p. 2"
+    notes: "Aerodynamic reference area = aeroshell base area."
+
+  nose_radius:
+    value: 0.6625
+    unit: m
+    validation: ASSERTED
+    source: "Edquist, Desai & Schoenenberger, 'Aerodynamics for the Mars Phoenix Entry Capsule', NTRS 20080034648, Fig. 2 (forebody nose radius 0.6625 m); InSight aerodatabase identical to Phoenix per NTRS 20200003204, Sec. III.G"
+    notes: "Phoenix-heritage forebody: nose radius = D/4; corner radius 0.06625 m not modeled."
+
+  drag_coefficient:
+    value: 1.68
+    unit: ""
+    validation: ASSERTED
+    source: "Derived from Edquist et al., NTRS 20080034648, Table 1: Phoenix m/(CD*A) = 65 kg/m^2 with m = 602 kg, A = 5.5155 m^2 => CD ~= 1.68 (hypersonic, alpha_trim = 0)"
+    notes: >
+      Hypersonic continuum trim drag coefficient of the Phoenix/InSight 70-deg
+      sphere-cone at zero angle of attack; consistent with the MSL-class value for the
+      same forebody. Karlgaard (NTRS 20200003204) prints no trim C_D.
+
+  lift_to_drag:
+    value: 0.0
+    unit: ""
+    validation: ASSERTED
+    source: "Edquist et al., NTRS 20080034648, Table 1 (Phoenix hypersonic alpha_trim = 0 deg, on-axis CG, non-spinning); InSight aerodatabase identical per NTRS 20200003204"
+    notes: >
+      Nominally ballistic: zero trim L/D by design. The flight reconstruction (NTRS
+      20200003204, Fig. 13, p. 18) shows a bounded oscillatory angle of attack with
+      lift oriented downward at entry — a transient, rolling lift that a static trim
+      model cannot represent; named a primary cause of the 6.1 km crossrange.
+
+  trim_angle_of_attack:
+    value: 0.0
+    unit: rad
+    validation: ASSERTED
+    source: "Edquist et al., NTRS 20080034648, Table 1: hypersonic alpha_trim = 0 deg (on-axis CG)"
+    notes: >
+      Design trim. During the hypersonic instability Phoenix-class capsules were
+      predicted to trim up to ~2.5 deg with an on-axis CG (NTRS 20080034648); InSight
+      flight showed bounded oscillation (NTRS 20200003204, Fig. 13).
+
+  half_cone_angle:
+    value: 1.2217
+    unit: rad
+    validation: ASSERTED
+    source: "70-deg sphere-cone forebody per NTRS 20200003204, p. 2 and NTRS 20080034648, Fig. 2"
+    notes: "70 deg cone half-angle measured from the axis."

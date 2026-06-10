@@ -28,7 +28,7 @@ __all__ = ["VehicleLibrary", "load_vehicle"]
 
 # Required tagged properties and the optional ones (defaulted to NOT_VALIDATED zero).
 _REQUIRED_PROPERTIES = ("mass", "reference_area", "nose_radius", "drag_coefficient")
-_OPTIONAL_PROPERTIES = ("lift_to_drag", "trim_angle_of_attack")
+_OPTIONAL_PROPERTIES = ("lift_to_drag", "trim_angle_of_attack", "half_cone_angle")
 
 
 def _parse_tagged_value(name: str, raw: Any) -> TaggedValue[float]:
@@ -163,6 +163,7 @@ class VehicleLibrary:
             drag_coefficient=tagged["drag_coefficient"],
             lift_to_drag=tagged["lift_to_drag"],
             trim_angle_of_attack=tagged["trim_angle_of_attack"],
+            half_cone_angle=tagged["half_cone_angle"],
             intended_planet=str(data.get("intended_planet", "earth")),
             description=str(data.get("description", "")),
         )

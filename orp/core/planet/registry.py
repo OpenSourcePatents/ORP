@@ -27,6 +27,7 @@ EARTH: Planet = Planet(
     rotation_rate=7.292_115e-5,
     gravitational_parameter=3.986_004_418e14,
     surface_pressure=101_325.0,
+    sutton_graves_constant=1.7415e-4,  # Earth air
 )
 
 #: Mars. Mean radius and rotation per IAU; μ per Mars gravity field.
@@ -37,7 +38,8 @@ MARS: Planet = Planet(
     mean_radius=3_389_500.0,
     rotation_rate=7.088_218e-5,
     gravitational_parameter=4.282_837e13,
-    surface_pressure=610.0,
+    surface_pressure=636.0,
+    sutton_graves_constant=1.9027e-4,  # Mars CO₂
 )
 
 #: Registry keyed by lowercase name.

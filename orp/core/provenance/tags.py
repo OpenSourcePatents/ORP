@@ -34,7 +34,13 @@ class ValidationLevel(Enum):
 
     The ordering matters: provenance combines by taking the *minimum* level (see
     :func:`weakest`), so ``NOT_VALIDATED`` must rank below ``ASSERTED`` below
-    ``VERIFIED_CFD`` below ``VERIFIED_FLIGHT``.
+    ``VERIFIED_SOURCE`` below ``VERIFIED_CFD`` below ``VERIFIED_FLIGHT``.
+
+    ``VERIFIED_SOURCE`` sits between ``ASSERTED`` and ``VERIFIED_CFD``: the implementation
+    has been verified (term-by-term or by spot checks) against its *defining* document —
+    stronger than merely citing a source, weaker than independent reproduction against CFD
+    or flight data. Spot-checks against a defining document verify the implementation, not
+    the physics' agreement with flight.
     """
 
     #: No validation — a placeholder, guess, or as-yet-unsourced value.
@@ -42,10 +48,17 @@ class ValidationLevel(Enum):
     #: Asserted by a credible source (datasheet, paper, report) but not independently
     #: reproduced by ORP.
     ASSERTED = ("asserted", 1, "Asserted by a credible source; not independently reproduced.")
+    #: Implementation verified against the defining source document (term-by-term equation
+    #: match or table spot-checks), but not independently reproduced against CFD or flight.
+    VERIFIED_SOURCE = (
+        "verified_source",
+        2,
+        "Implementation verified against its defining source document.",
+    )
     #: Reproduced against computational fluid dynamics / numerical analysis.
-    VERIFIED_CFD = ("verified_cfd", 2, "Reproduced against CFD / numerical analysis.")
+    VERIFIED_CFD = ("verified_cfd", 3, "Reproduced against CFD / numerical analysis.")
     #: Reconciled against real flight telemetry / reconstructed flight data.
-    VERIFIED_FLIGHT = ("verified_flight", 3, "Reconciled against real flight data.")
+    VERIFIED_FLIGHT = ("verified_flight", 4, "Reconciled against real flight data.")
 
     def __init__(self, key: str, rank: int, description: str) -> None:
         self._key = key

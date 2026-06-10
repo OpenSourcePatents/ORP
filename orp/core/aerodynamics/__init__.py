@@ -13,6 +13,7 @@ implementation.
 """
 
 from orp.core.aerodynamics.calculator import AerodynamicCalculator, AerodynamicForces
+from orp.core.aerodynamics.constant import ConstantCoefficientCalculator
 from orp.core.aerodynamics.flight_conditions import FlightConditions
 from orp.core.aerodynamics.newtonian import ModifiedNewtonianCalculator
 
@@ -20,5 +21,6 @@ __all__ = [
     "FlightConditions",
     "AerodynamicCalculator",
     "AerodynamicForces",
+    "ConstantCoefficientCalculator",
     "ModifiedNewtonianCalculator",
 ]
