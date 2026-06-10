@@ -23,6 +23,7 @@ import numpy as np
 
 from orp.core.aerodynamics.calculator import AerodynamicForces
 from orp.core.aerodynamics.flight_conditions import FlightConditions
+from orp.core.provenance.tags import ProvenanceTag, ValidationLevel
 from orp.core.simulation import flight_data as fd
 from orp.core.simulation.status import (
     IDX_ALTITUDE,
@@ -51,6 +52,30 @@ class SimulationStepper(ABC):
     across integration schemes: flight-condition assembly, the aerodynamic/gravity queries,
     the equation-of-motion seam, and writing the derived output channels for a data point.
     """
+
+    @property
+    def provenance(self) -> ProvenanceTag:
+        """Provenance of the equations of motion implemented by this stepper.
+
+        The 3-DOF rotating-planet EOM in :meth:`compute_derivatives` were verified
+        term-by-term against their defining source document (see
+        ``docs/verification/eom_vinh_culp_cr149170.md``), hence ``VERIFIED_SOURCE``. The
+        engine folds this tag into every trajectory's weakest-link provenance.
+        """
+        return ProvenanceTag(
+            level=ValidationLevel.VERIFIED_SOURCE,
+            source=(
+                "Busemann, Vinh & Culp, 'Hypersonic Flight Mechanics' (NASA CR-149170, "
+                "NTRS 19760024112, 1976), Ch. 2 Eqs. (2-28), (2-31), (2-34)"
+            ),
+            notes=(
+                "Term-by-term match verified 2026-06-10 under the exact mapping "
+                "psi_doc = pi/2 - psi_ORP (document heading is East-toward-North), "
+                "sigma_ORP = -sigma_doc; see docs/verification/eom_vinh_culp_cr149170.md. "
+                "Document gravity is central/radial; ORP inserts the injected gravity "
+                "magnitude into the same slots (deflection of the vertical neglected)."
+            ),
+        )
 
     def initialize(self, status: SimulationStatus) -> SimulationStatus:
         """Prepare ``status`` for stepping by this stepper; returns the status to use.
@@ -123,6 +148,14 @@ class SimulationStepper(ABC):
         steers the heading. σ is never an unknown solved for: that is the forward-only wall in
         physics form. Every planet-specific quantity (gravity, ω, radius, atmosphere) flows
         from the injected :class:`~orp.core.planet.planet.Planet`.
+
+        These equations were verified term-by-term against Busemann, Vinh & Culp,
+        *Hypersonic Flight Mechanics* (NASA CR-149170, NTRS 19760024112), Ch. 2: kinematics
+        Eq. (2-28), rotating-planet force equations Eq. (2-31), entry case Eq. (2-34) —
+        under the heading/bank convention mapping documented in
+        ``docs/verification/eom_vinh_culp_cr149170.md``. Note dV/dt carries **no** Coriolis
+        (2ωV) term: the Coriolis acceleration is perpendicular to the planet-relative
+        velocity and does no work; it appears only in the dγ/dt and dψ/dt equations.
         """
         conditions = status.conditions
         planet = conditions.planet

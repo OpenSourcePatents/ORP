@@ -64,9 +64,11 @@ class TestEarthISA:
         assert above.temperature == pytest.approx(top.temperature)
         assert above.pressure == pytest.approx(top.pressure)
 
-    def test_provenance_verified_flight(self) -> None:
+    def test_provenance_verified_source(self) -> None:
+        # VERIFIED_SOURCE: ORP's spot-checks verify the implementation against the defining
+        # standard's tables, not against flight telemetry.
         prov = self.model.provenance
-        assert prov.level is ValidationLevel.VERIFIED_FLIGHT
+        assert prov.level is ValidationLevel.VERIFIED_SOURCE
         assert "1976" in prov.source
 
 
@@ -115,5 +117,11 @@ class TestMarsAtmosphere:
         # Distinct from Earth air — proves the multi-planet abstraction.
         assert self.model.get_conditions(0.0).specific_gas_constant == pytest.approx(188.92)
 
-    def test_provenance_verified_flight(self) -> None:
-        assert self.model.provenance.level is ValidationLevel.VERIFIED_FLIGHT
+    def test_provenance_verified_source_with_viking_dataset(self) -> None:
+        # VERIFIED_SOURCE: spot-checks verify the implementation against the defining
+        # 636 Pa / 210 K anchor; the citation names the Viking source datasets behind it.
+        prov = self.model.provenance
+        assert prov.level is ValidationLevel.VERIFIED_SOURCE
+        assert "Viking" in prov.source
+        assert "10.1029/JS082i028p04559" in prov.source  # Hess et al. (1977)
+        assert "10.1029/JS082i028p04364" in prov.source  # Seiff & Kirk (1977)

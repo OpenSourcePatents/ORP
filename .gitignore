@@ -65,3 +65,6 @@ Thumbs.db
 *.csv.out
 /runs/
 /output/
+
+# Downloaded reference documents and scratch extraction helpers (cited, not vendored)
+/refs/

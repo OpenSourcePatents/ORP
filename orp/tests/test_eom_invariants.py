@@ -22,6 +22,10 @@ end-to-end trajectory behaviour:
    energy; the integrated drift must be at integrator-roundoff level.
 4. **ω = 0 reduction.** With rotation off, the derivatives must equal the standard
    non-rotating planet-relative entry set, term for term, on a sampled state grid.
+5. **Source verification.** The EOM were verified term-by-term against Busemann, Vinh &
+   Culp, *Hypersonic Flight Mechanics* (NASA CR-149170, NTRS 19760024112), Ch. 2 — see
+   ``docs/verification/eom_vinh_culp_cr149170.md``. The tests here pin the provenance
+   consequences: the ``VERIFIED_SOURCE`` level, the EOM tag, and its weakest-link fold.
 """
 
 from __future__ import annotations
@@ -449,3 +453,73 @@ class TestOmegaZeroReduction:
             )
             for got, want in zip(actual, expected):
                 assert got == pytest.approx(want, rel=1e-12, abs=1e-15)
+
+
+class TestEOMSourceVerification:
+    """Test 5 — provenance consequences of the term-by-term source verification.
+
+    The verification itself (against NASA CR-149170, NTRS 19760024112) is documented in
+    ``docs/verification/eom_vinh_culp_cr149170.md``; these tests pin its code-level
+    consequences so they cannot silently regress.
+    """
+
+    def test_verified_source_sits_between_asserted_and_cfd(self) -> None:
+        assert (
+            ValidationLevel.NOT_VALIDATED
+            < ValidationLevel.ASSERTED
+            < ValidationLevel.VERIFIED_SOURCE
+            < ValidationLevel.VERIFIED_CFD
+            < ValidationLevel.VERIFIED_FLIGHT
+        )
+
+    def test_verified_source_parses_from_string(self) -> None:
+        assert ValidationLevel.from_string("VERIFIED_SOURCE") is ValidationLevel.VERIFIED_SOURCE
+        assert ValidationLevel.from_string("verified_source") is ValidationLevel.VERIFIED_SOURCE
+
+    def test_eom_is_tagged_verified_source_with_citation(self) -> None:
+        stepper = RK4Stepper()
+        provenance = stepper.provenance
+        assert provenance.level is ValidationLevel.VERIFIED_SOURCE
+        assert "CR-149170" in provenance.source
+        assert "19760024112" in provenance.source
+        assert "2-31" in provenance.source  # the rotating-planet force equations
+
+    def test_engine_folds_eom_provenance_into_run(self) -> None:
+        """With every *input* at VERIFIED_FLIGHT, the run is capped by the EOM's tag."""
+        from orp.core.simulation import SimulationEngine
+        from orp.core.vehicles.base import EntryVehicle
+
+        def tv(value: float, unit: str = "") -> TaggedValue[float]:
+            return TaggedValue(
+                value=value,
+                provenance=ProvenanceTag(ValidationLevel.VERIFIED_FLIGHT, "test telemetry"),
+                unit=unit,
+            )
+
+        vehicle = EntryVehicle(
+            name="all-flight-verified body",
+            mass=tv(1200.0, "kg"),
+            reference_area=tv(4.0, "m^2"),
+            nose_radius=tv(1.0, "m"),
+            drag_coefficient=tv(1.5),
+            lift_to_drag=tv(0.3),
+            trim_angle_of_attack=tv(0.0, "rad"),
+            half_cone_angle=tv(1.2217, "rad"),
+        )
+        conditions = SimulationConditions(
+            vehicle=vehicle,
+            planet=_make_planet(_OMEGA, atmosphere=_UniformDensityAtmosphere(1e-7)),
+            bank_schedule=BankSchedule.constant(
+                0.0, provenance=ProvenanceTag(ValidationLevel.VERIFIED_FLIGHT, "test telemetry")
+            ),
+            aerodynamic_calculator=_ConstantAero(1.5, 0.45),
+            entry_velocity=7800.0,
+            entry_altitude=120_000.0,
+            time_step=1.0,
+            max_simulation_time=5.0,
+        )
+        flight_data = SimulationEngine().simulate(conditions)
+        # Every injected input is VERIFIED_FLIGHT; the EOM (VERIFIED_SOURCE) is now the
+        # weakest link, so the trajectory must come back VERIFIED_SOURCE — proof the
+        # engine folds the stepper's provenance into the run.
+        assert flight_data.provenance.level is ValidationLevel.VERIFIED_SOURCE

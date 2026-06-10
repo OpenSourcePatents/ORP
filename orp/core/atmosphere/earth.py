@@ -117,11 +117,13 @@ class EarthISAModel(AtmosphericModel):
     @property
     def provenance(self) -> ProvenanceTag:
         return ProvenanceTag(
-            level=ValidationLevel.VERIFIED_FLIGHT,
+            level=ValidationLevel.VERIFIED_SOURCE,
             source="U.S. Standard Atmosphere, 1976 (NOAA-S/T 76-1562); ICAO ISA",
             notes=(
-                "Seven-layer ISA, 0–86 km, in geopotential altitude. Internationally "
-                "standardised model reconciled against decades of radiosonde/rocket/satellite "
-                "measurements. Above 86 km the model is held constant (out of ISA validity)."
+                "Seven-layer ISA, 0–86 km, in geopotential altitude. ORP's implementation is "
+                "spot-checked against the defining standard's tables (VERIFIED_SOURCE): that "
+                "verifies the implementation, not flight agreement. The standard itself is "
+                "reconciled against decades of radiosonde/rocket/satellite measurements. "
+                "Above 86 km the model is held constant (out of ISA validity)."
             ),
         )

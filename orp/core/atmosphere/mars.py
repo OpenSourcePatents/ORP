@@ -74,11 +74,20 @@ class MarsAtmosphereModel(AtmosphericModel):
     @property
     def provenance(self) -> ProvenanceTag:
         return ProvenanceTag(
-            level=ValidationLevel.VERIFIED_FLIGHT,
-            source="NASA Mars Fact Sheet / Viking lander surface measurements (P≈636 Pa, T≈210 K)",
+            level=ValidationLevel.VERIFIED_SOURCE,
+            source=(
+                "NASA Mars Fact Sheet datum (P≈636 Pa, T≈210 K), distilled from Viking "
+                "lander measurements: Hess, Henry, Leovy, Ryan & Tillman, 'Meteorological "
+                "results from the surface of Mars: Viking 1 and 2', J. Geophys. Res. 82(28), "
+                "4559–4574 (1977), DOI 10.1029/JS082i028p04559; Seiff & Kirk, 'Structure of "
+                "the atmosphere of Mars in summer at mid-latitudes', J. Geophys. Res. 82(28), "
+                "4364–4378 (1977), DOI 10.1029/JS082i028p04364"
+            ),
             notes=(
-                "Surface P, T anchored to lander measurements; CO₂ ideal gas gives ρ₀=0.0160 "
-                "kg/m³ (≈ standard EDL value 0.0159; the quoted 0.020 is a rounded, "
+                "Surface P, T anchored to the lander-measured datum; ORP's spot-checks verify "
+                "the implementation against that defining anchor (VERIFIED_SOURCE), not "
+                "against flight reconstructions. CO₂ ideal gas gives ρ₀=0.0160 kg/m³ "
+                "(≈ standard EDL value 0.0159; the quoted 0.020 is a rounded, "
                 "ideal-gas-inconsistent fact-sheet figure). Isothermal exponential profile "
                 "aloft is an engineering approximation (Mars-GRAM profile is the refinement)."
             ),
