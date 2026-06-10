@@ -47,6 +47,7 @@ ALL_MODULES = [
     "orp.core.simulation.flight_data",
     "orp.core.simulation.stepper",
     "orp.core.simulation.engine",
+    "orp.core.frames",
     "orp.gui",
 ]
 
