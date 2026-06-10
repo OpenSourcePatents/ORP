@@ -68,3 +68,6 @@ Thumbs.db
 
 # Downloaded reference documents and scratch extraction helpers (cited, not vendored)
 /refs/
+
+# Pinned reference clone for the bridge gate (see docs/verification/bridge_openreentry_gate.md)
+/ref_core/
