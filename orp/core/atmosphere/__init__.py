@@ -14,6 +14,7 @@ from orp.core.atmosphere.earth import EarthISAModel
 from orp.core.atmosphere.exponential import ExponentialAtmosphere
 from orp.core.atmosphere.mars import MarsAtmosphereModel
 from orp.core.atmosphere.model import AtmosphericConditions, AtmosphericModel
+from orp.core.atmosphere.us76_highalt import US76HighAltitudeExtension
 
 __all__ = [
     "AtmosphericModel",
@@ -21,4 +22,5 @@ __all__ = [
     "EarthISAModel",
     "ExponentialAtmosphere",
     "MarsAtmosphereModel",
+    "US76HighAltitudeExtension",
 ]

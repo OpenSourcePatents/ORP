@@ -148,20 +148,27 @@ def lateral_corridor_check() -> dict[str, float | bool]:
 
 
 def bank_schedule():
-    """The Artemis I bank command — REFUSES (NotImplementedError); see the convention rule.
+    """The Artemis I bank command — still raises, but for a NARROWER reason than before.
 
-    CONVENTION-LAUNDERING RULE: AAS 24-174 Table 3 gives the bank-reversal *times* but not
-    the initial bank *sign*; the full bank command is Fig 12(a), which is figure-only. A
-    schedule reconstructed from reversal times with a *guessed* initial sign does not lock a
-    sign convention — it launders an assumption into false precision. Replaying a known
-    schedule is in scope (forward-only); fabricating one is not. This slot refuses until
-    Fig 12(a) is digitized by a human.
+    UPDATE 2026-06-10: Fig 12(a) has been machine-digitized
+    (data/flights/artemis1_bank_commanded.csv; methods and measured uncertainty in
+    docs/digitization/artemis1_bank_commanded.md), so the original refusal ("figure-only,
+    a guessed initial sign launders a convention") no longer applies — the schedule,
+    including its signed shape, is now sourced. What remains OPEN is the binary mapping
+    between the figure's plotted sign and ORP's sigma: the paper never defines its bank
+    sign convention in text, and the Gate-3 replay could not lock the mapping from the
+    endpoint crossrange (the open-loop replay diverges in the skip; see
+    docs/gates/gate3_artemis_replay.md). Callers must therefore choose the mapping
+    EXPLICITLY via gate3_artemis_replay.load_digitized_schedule(sign=...), and treat the
+    sign as plotted-sign-only.
     """
     raise NotImplementedError(
-        "Artemis I bank command is figure-only (AAS 24-174 Fig 12(a)); Table 3 gives reversal "
-        "TIMES but not the initial SIGN. A guessed initial sign does not lock a sign "
-        "convention (convention laundering). Bank schedule pending Fig 12(a) digitization -- "
-        "Gate 3 NOT_VALIDATED."
+        "Use orp.gates.gate3_artemis_replay.load_digitized_schedule(sign=+1|-1): the "
+        "digitized schedule exists (MACHINE-DIGITIZED, data/flights/"
+        "artemis1_bank_commanded.csv) but the figure-to-ORP sign mapping is NOT locked "
+        "(AAS 24-174 defines no bank sign convention in text and the replay's endpoint "
+        "discriminator was unreachable -- docs/gates/gate3_artemis_replay.md). Choose the "
+        "mapping explicitly and carry the plotted-sign-only caveat."
     )
 
 
