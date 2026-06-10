@@ -50,6 +50,7 @@ ALL_MODULES = [
     "orp.core.frames",
     "orp.gates",
     "orp.gates.gate3_artemis",
+    "orp.gates.gate_stardust",
     "orp.gui",
 ]
 

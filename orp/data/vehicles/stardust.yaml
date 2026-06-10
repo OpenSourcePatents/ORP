@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# ORP vehicle definition — Stardust Sample Return Capsule (SRC)
+# Earth reentry, ballistic 60-degree sphere-cone. Fastest Earth entry ever flown
+# (~12.9 km/s inertial, 2006-01-15). Geometry from Mitcheltree AIAA 97-2304 (NTRS
+# 20040105538), text-extracted. Every property carries a validation level and source.
+# Canonical units: mass kg, area m^2, length m, coefficients dimensionless, angles radians.
+name: Stardust SRC
+intended_planet: earth
+description: >
+  Stardust Sample Return Capsule: a 60-degree half-angle sphere-cone, 0.8128 m base
+  diameter, spin-stabilized (~13.5 rpm), flown ballistically (L/D ~ 0). Forebody outer
+  mold line from Mitcheltree et al., AIAA 97-2304 (NTRS 20040105538): nose radius 0.2286 m,
+  shoulder radius 0.01905 m, frontal area 0.51887 m^2, c.g. at 0.35D back from the nose.
+  Entry-interface conditions (radius 6503.14 km, 12.9 km/s inertial at -8.2 deg, azimuth
+  102.9 deg) are scenario inputs encoded in the Stardust gate, not here. The full CD-vs-Mach
+  curve is figure-based in the source; this file carries the hypersonic-continuum value.
+
+properties:
+  mass:
+    value: 46.0
+    unit: kg
+    validation: ASSERTED
+    source: "Stardust SRC entry mass ~46 kg (commonly cited; Mitcheltree AIAA 97-2304 / Desai entry reconstruction)"
+    notes: "Entry-interface mass of the sample return capsule."
+
+  reference_area:
+    value: 0.51887
+    unit: m^2
+    validation: ASSERTED
+    source: "Mitcheltree et al., AIAA 97-2304 (NTRS 20040105538): frontal area 0.51887 m^2 (text)"
+    notes: "Reference area = frontal area of the 0.8128 m diameter forebody."
+
+  nose_radius:
+    value: 0.2286
+    unit: m
+    validation: ASSERTED
+    source: "Mitcheltree et al., AIAA 97-2304 (NTRS 20040105538): nose radius 0.2286 m (text)"
+    notes: "Spherical nose radius of the 60-deg sphere-cone forebody (pre-ablation)."
+
+  drag_coefficient:
+    value: 1.61
+    unit: ""
+    validation: ASSERTED
+    source: "Mitcheltree et al., AIAA 97-2304 (NTRS 20040105538): zero-AoA hypersonic-continuum axial coefficient ~1.61 (text/table)"
+    notes: >
+      Hypersonic continuum (M > 12) zero-angle-of-attack drag coefficient. The full
+      CD-vs-Mach curve (decreasing below M~12 as the sonic line shifts to the shoulder) is
+      figure-based in the source and is not digitized; the forward sim uses this constant CD.
+
+  lift_to_drag:
+    value: 0.0
+    unit: ""
+    validation: ASSERTED
+    source: "Mitcheltree et al., AIAA 97-2304: ballistic, spin-stabilized (~13.5 rpm) -> no net trim lift"
+    notes: "Ballistic entry by design; zero net L/D (spin averages out small trim asymmetries)."
+
+  trim_angle_of_attack:
+    value: 0.0
+    unit: rad
+    validation: ASSERTED
+    source: "Mitcheltree et al., AIAA 97-2304: spin-stabilized ballistic; nominal zero incidence"
+    notes: >
+      Nominal zero. The capsule is statically unstable about its as-flown c.g. (0.35D) at low
+      Knudsen number and oscillates; spin stabilization keeps the time-averaged lift ~0.
+
+  half_cone_angle:
+    value: 1.0472
+    unit: rad
+    validation: ASSERTED
+    source: "Mitcheltree et al., AIAA 97-2304 (NTRS 20040105538): 60-deg half-angle sphere-cone (text)"
+    notes: "60 deg cone half-angle measured from the axis."
