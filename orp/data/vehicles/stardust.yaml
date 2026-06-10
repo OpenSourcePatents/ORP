@@ -20,8 +20,11 @@ properties:
     value: 46.0
     unit: kg
     validation: ASSERTED
-    source: "Stardust SRC entry mass ~46 kg (commonly cited; Mitcheltree AIAA 97-2304 / Desai entry reconstruction)"
-    notes: "Entry-interface mass of the sample return capsule."
+    source: "Desai & Qualls, 'Stardust Entry Reconstruction', AIAA-2008-1198 (NTRS 20080008567): 46 kg (text-stated)"
+    notes: >
+      Entry-interface mass of the sample return capsule. Source tightened 2026-06-10:
+      46 kg is text-stated in the pinned reconstruction primary (dual-channel verified),
+      no longer 'commonly cited'.
 
   reference_area:
     value: 0.51887
@@ -38,14 +41,18 @@ properties:
     notes: "Spherical nose radius of the 60-deg sphere-cone forebody (pre-ablation)."
 
   drag_coefficient:
-    value: 1.61
+    value: 1.50
     unit: ""
     validation: ASSERTED
-    source: "Mitcheltree et al., AIAA 97-2304 (NTRS 20040105538): zero-AoA hypersonic-continuum axial coefficient ~1.61 (text/table)"
+    source: "Mitcheltree et al., AIAA 97-2304 (NTRS 20040105538), Table 4 (LAURA, zero-AoA): continuum C_A 1.4816-1.5636 over Mach 12.2-42.7; mean 1.50 stored"
     notes: >
-      Hypersonic continuum (M > 12) zero-angle-of-attack drag coefficient. The full
-      CD-vs-Mach curve (decreasing below M~12 as the sonic line shifts to the shoulder) is
-      figure-based in the source and is not digitized; the forward sim uses this constant CD.
+      Hypersonic continuum (M > 12) zero-angle-of-attack axial coefficient from Table 4
+      (LAURA): 1.5636 (M42.7), 1.4959 (M40), 1.4828 (M35.4), 1.4816 (M24.7), 1.4939
+      (M17.1), 1.4992 (M12.2); mean 1.50. CORRECTION 2026-06-10: the previously stored
+      1.61 attributed to this source does not appear anywhere in it (dual-channel
+      transcription verification, pixel + text layer); 1.61 was a mis-extraction. The
+      full C_A-vs-Mach curve below M~12 remains figure-based; the forward sim uses this
+      constant CD.
 
   lift_to_drag:
     value: 0.0
@@ -69,3 +76,11 @@ properties:
     validation: ASSERTED
     source: "Mitcheltree et al., AIAA 97-2304 (NTRS 20040105538): 60-deg half-angle sphere-cone (text)"
     notes: "60 deg cone half-angle measured from the axis."
+
+# Transcription status (2026-06-10): dual-channel verification (blind pixel transcripts vs
+# PDF text layer). Geometry (60 deg, Rn 0.2286 m, shoulder 0.01905 m, D 0.8128 m, area
+# 0.51887 m^2, c.g. 0.35D) DUAL-CHANNEL VERIFIED vs Mitcheltree AIAA 97-2304. DISCREPANCY
+# found and corrected: CD 1.61 (previously attributed to Mitcheltree 'text/table') appears
+# nowhere in that source; replaced with Table-4 LAURA zero-AoA continuum mean 1.50
+# (range 1.4816-1.5636, M 12.2-42.7). Mass 46 kg / spin 13.5 rpm / EI conditions
+# DUAL-CHANNEL VERIFIED vs Desai & Qualls NTRS 20080008567.

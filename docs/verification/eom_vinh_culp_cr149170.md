@@ -176,3 +176,6 @@ planet-relative velocity (it does no work), the printed Eq. (2-31a) speed equati
    *quantities* taken from flight-reconstruction documents — the provenance describes the
    origin of the value, which genuinely is flight data. No citation strings were affected by
    the atmosphere retag.
+
+## Transcription status (2026-06-10)
+DUAL-CHANNEL VERIFIED - a second, independent blind pixel-channel transcription of printed pages 2-5..2-13 (600-DPI half-page renders plus up-to-1400-DPI crops) reproduced verbatim every equation and convention sentence this document relies on: the theta/phi/gamma/psi/sigma definitions (p. 2-5, 2-7/2-8), Eq. (2-28) kinematics, Eq. (2-31) force equations including the absence of a 2*omega*V term in dV/dt, the Coriolis passage (p. 2-12, word-for-word), F_T = -D / F_N = L, and Eq. (2-34). The 1976 typescript has no reliable text layer for mathematics, so the two independent pixel readings (this session's and the original verification's) are the two channels. Two source typesetting defects found in equations ORP does not rely on: Eq. (2-30) middle equation runs off the right margin (closing 'phi)' missing), and Eq. (2-32) third equation's leading 'V' is printed with a descender resembling lowercase 'y'.

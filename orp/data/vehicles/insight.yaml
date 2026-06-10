@@ -72,3 +72,12 @@ properties:
     validation: ASSERTED
     source: "70-deg sphere-cone forebody per NTRS 20200003204, p. 2 and NTRS 20080034648, Fig. 2"
     notes: "70 deg cone half-angle measured from the axis."
+
+# Transcription status (2026-06-10): DUAL-CHANNEL VERIFIED - Phoenix aero paper (NTRS
+# 20080034648) read blind from pixels and diffed against the PDF text layer: Table 1
+# Phoenix column (2.65 m, 602 kg, m/(CD*A) 65 kg/m^2, hypersonic alpha_trim 0,
+# X_cg/D -0.25) and the 2.5-deg instability statement confirmed in both channels; CD 1.68
+# derivation re-checked (602/(65*5.5155)=1.679). Nose radius 0.6625 m and corner radius
+# 0.06625 m are Figure-2 raster annotations (absent from the text layer) - confirmed by
+# the pixel channel only, at 500 DPI. Source-internal oddity: Table 1 prints X_cg/D -0.25
+# while every figure annotation box prints -0.253.

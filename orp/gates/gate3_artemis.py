@@ -29,6 +29,13 @@ schedule is in scope (forward-only); fabricating one from reversal times is not.
 bank_schedule() raises NotImplementedError pending human digitization of Fig 12(a).
 
 VALIDATION STATUS: NOT_VALIDATED. No flight trajectory comparison is made.
+
+TRANSCRIPTION STATUS (2026-06-10): DUAL-CHANNEL VERIFIED. Every constant below (Tables
+1/2/3/4, skip apogee, lateral corridor) was re-read blind from 600-1200 DPI page pixels
+and independently diffed against the PDF text layer: all cells agree exactly, including
+the Table 4 miss-distance column (bare integers 1/1/2 nmi) and the 5.4 nmi landing
+requirement. Table 2's seventh row (FBC Pilot Chute Deploy: 950.125 s flight / 946.15 s
+predicted) is text-verified but was not previously encoded here.
 """
 
 from __future__ import annotations

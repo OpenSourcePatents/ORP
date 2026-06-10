@@ -61,7 +61,8 @@ class TestStardustVehicle:
         v.validate()
         assert v.nose_radius.get() == pytest.approx(0.2286)
         assert v.reference_area.get() == pytest.approx(0.51887)
-        assert v.drag_coefficient.get() == pytest.approx(1.61)
+        # CD corrected 2026-06-10: Table-4 LAURA zero-AoA continuum mean (1.4816-1.5636).
+        assert v.drag_coefficient.get() == pytest.approx(1.50)
         assert v.lift_to_drag.get() == 0.0  # ballistic
         # All properties are Mitcheltree-sourced -> vehicle is ASSERTED (not NOT_VALIDATED).
         assert v.provenance.level is ValidationLevel.ASSERTED

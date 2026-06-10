@@ -2,6 +2,7 @@
   "_SPDX-License-Identifier": "GPL-3.0-or-later",
   "_README": "ORP per-flight data availability map. Records, per reentry flight, which gate-truth and vehicle-property data are publicly sourceable and at what fidelity. Mirrors the pattern of OpenReentry's data_availability_map.json (pinned reference at ref_core/, NOT vendored). Source tags: 'text'=stated in a report's prose/tables (directly sourceable); 'fig'=figure-only, needs digitization before use; 'lit'=in analysis/CFD literature, source carefully; 'controlled'=export/availability barrier; 'na'=not applicable. Forward-only wall: bank schedules are inputs, crossrange is an output; nothing here is a target to solve for.",
   "_provenance_levels": "Mirror orp.core.provenance.tags.ValidationLevel: NOT_VALIDATED < ASSERTED < VERIFIED_SOURCE < VERIFIED_CFD < VERIFIED_FLIGHT.",
+  "_transcription_status_2026-06-10": "Dual-channel transcription verification (blind pixel transcripts at 300-1400 DPI vs PDF text layers vs repo citations). DUAL-CHANNEL VERIFIED: AAS 24-174 Tables 1-4 + skip apogee 287.4/293.5 kft + estimator 10%/5% statements; McNamara 20140004224 Table 3 (mass 9934-10387 kg, L/D 0.23-0.27); Desai & Qualls 20080008567 key values; Mitcheltree 97-2304 OML; AAS 13-307 (MSL/MEADS paper) Tables 1-3 + EIP 3522.2 km + 695 Pa; CR-149170 Ch.2 equations; Phoenix 20080034648 values feeding insight.yaml. ONE DISCREPANCY corrected: Stardust CD 1.61 was not in Mitcheltree (now 1.50, Table-4 mean). Source-internal anomalies recorded: AAS 13-307 Table 2 theta filter 1-sigma prints 6.76E-4 (suspected exponent typo for e-05); Phoenix Table 1 X_cg/D -0.25 vs figure boxes -0.253.",
   "flights": {
     "stardust_src": {
       "name": "Stardust Sample Return Capsule",
@@ -19,25 +20,25 @@
         "cg_back_from_nose_D": {"value": 0.35, "src": "text: Mitcheltree AIAA 97-2304 (as-flown c.g.; unstable about c.p.; recommended forward to ~0.26D)"}
       },
       "aero": {
-        "CD_hypersonic_continuum": {"value": 1.61, "src": "text/table: Mitcheltree AIAA 97-2304 zero-AoA axial coefficient ~1.61 (continuum, M>12); full CD-vs-Mach is fig/table, partly digitizable"},
+        "CD_hypersonic_continuum": {"value": 1.50, "src": "table: Mitcheltree AIAA 97-2304 Table 4 (LAURA) zero-AoA continuum C_A 1.4816-1.5636 over M 12.2-42.7, mean 1.50; CORRECTED 2026-06-10 (prior 1.61 not in source); full CD-vs-Mach below M~12 is fig"},
         "CD_vs_Mach": {"value": null, "src": "fig: Mitcheltree AIAA 97-2304 CFD/tunnel; decreases below M~12 (sonic-line shift); needs digitization for a full table"},
         "lift_to_drag": {"value": 0.0, "src": "lit: ballistic, spin-stabilized"}
       },
       "gate_truths": {
-        "_note": "Reconstruction values supplied to ORP as Phase-3 inputs; treat as ASSERTED pending a pinned primary citation.",
-        "drogue_deploy_s": {"value": 137.9, "src": "lit: Stardust EI+ entry reconstruction"},
-        "mach_1p23_altitude_km": {"value": 31.03, "src": "lit: reconstruction"},
-        "peak_deceleration_g": {"value": 32.89, "src": "lit: reconstruction", "three_sigma": 3.64},
-        "entry_inertial_velocity_km_s": {"value": 12.9, "src": "lit: reconstruction; planet-relative ~12.6"},
-        "entry_fpa_deg": {"value": -8.2, "src": "lit: reconstruction (inertial)"},
-        "entry_azimuth_deg": {"value": 102.9, "src": "lit: reconstruction"},
-        "entry_radius_km": {"value": 6503.14, "src": "lit: reconstruction"},
-        "mass_kg": {"value": 46.0, "src": "lit: commonly cited; Phase-3 input"},
-        "spin_rpm": {"value": 13.5, "src": "lit: spin-stabilized; Phase-3 input"},
-        "ei_latitude_deg": {"value": null, "src": "ABSENT from primary text -- swept as an assumption in the Stardust experiment"}
+        "_note": "Pinned primary acquired 2026-06-10: Desai & Qualls, 'Stardust Entry Reconstruction', AIAA-2008-1198 (NTRS 20080008567). All values below are text-stated in it and DUAL-CHANNEL VERIFIED (blind pixel transcript vs PDF text layer).",
+        "drogue_deploy_s": {"value": 137.9, "src": "text: Desai & Qualls NTRS 20080008567"},
+        "mach_1p23_altitude_km": {"value": 31.03, "src": "text: Desai & Qualls NTRS 20080008567 (BET drogue M=1.213 at 31.033 km also stated)"},
+        "peak_deceleration_g": {"value": 32.89, "src": "text: Desai & Qualls NTRS 20080008567 (BET; nominal 32.86)", "three_sigma": 3.64},
+        "entry_inertial_velocity_km_s": {"value": 12.9, "src": "text: Desai & Qualls NTRS 20080008567; planet-relative ~12.6 is derived/figure-only"},
+        "entry_fpa_deg": {"value": -8.2, "src": "text: Desai & Qualls NTRS 20080008567 (inertial)"},
+        "entry_azimuth_deg": {"value": 102.9, "src": "text: Desai & Qualls NTRS 20080008567 (stated as descent entry azimuth; 'inertial at EI' is an interpretation)"},
+        "entry_radius_km": {"value": 6503.14, "src": "text: Desai & Qualls NTRS 20080008567"},
+        "mass_kg": {"value": 46.0, "src": "text: Desai & Qualls NTRS 20080008567"},
+        "spin_rpm": {"value": 13.5, "src": "text: Desai & Qualls NTRS 20080008567"},
+        "ei_latitude_deg": {"value": null, "src": "ABSENT from primary text (re-confirmed by pixel transcript 2026-06-10) -- swept as an assumption in the Stardust experiment"}
       },
       "aerothermal_source": {"value": "Trumble AIAA 2008-1201 / JSR 47(5) 2010 doi:10.2514/1.41514", "src": "ABSENT from NTRS as of 2026-06-10 search; available via AIAA ARC / ResearchGate"},
-      "primary_to_get": "Desai & Qualls Stardust entry reconstruction; Mitcheltree AIAA 97-2304 (geometry, have)"
+      "primary_to_get": "(acquired) Desai & Qualls NTRS 20080008567 at refs/ntrs_20080008567.pdf; Mitcheltree AIAA 97-2304 (geometry, have)"
     },
     "artemis_i_orion": {
       "name": "Artemis I (Orion) skip entry",

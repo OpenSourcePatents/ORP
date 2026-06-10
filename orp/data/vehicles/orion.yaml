@@ -71,3 +71,8 @@ properties:
     notes: >
       ~33 deg. Orion's forebody is a spherical segment, not a sphere-cone; this angle only
       keeps the Modified-Newtonian model a spherical cap. Not used in the Gate-3 scaffold.
+
+# Transcription status (2026-06-10): DUAL-CHANNEL VERIFIED - McNamara NTRS 20140004224
+# Table 3 read blind from 600-DPI pixels and diffed against the PDF text layer: mass
+# design range 9,934-10,387 kg (midpoint 10160.5 stored) and L/D 0.23-0.27 (midpoint
+# 0.25 stored) confirmed cell-exact in both channels.
