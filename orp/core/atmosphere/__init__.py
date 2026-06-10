@@ -11,6 +11,7 @@ implementations bundled into a :class:`~orp.core.planet.planet.Planet`.
 """
 
 from orp.core.atmosphere.earth import EarthISAModel
+from orp.core.atmosphere.exponential import ExponentialAtmosphere
 from orp.core.atmosphere.mars import MarsAtmosphereModel
 from orp.core.atmosphere.model import AtmosphericConditions, AtmosphericModel
 
@@ -18,5 +19,6 @@ __all__ = [
     "AtmosphericModel",
     "AtmosphericConditions",
     "EarthISAModel",
+    "ExponentialAtmosphere",
     "MarsAtmosphereModel",
 ]
