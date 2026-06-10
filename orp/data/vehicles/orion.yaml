@@ -1,0 +1,73 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# ORP vehicle definition — Orion Crew Module (Artemis I), Gate 3 scaffold
+# Earth skip reentry, lifting blunt capsule. Every property carries a validation level
+# and source. Canonical units: mass kg, area m^2, length m, coefficients dimensionless,
+# angles radians. This is a Gate-3 SCAFFOLD vehicle: overall provenance is NOT_VALIDATED
+# (trim attitude is figure-only); no validated trajectory is claimed.
+name: Orion Crew Module
+intended_planet: earth
+description: >
+  Orion Multi-Purpose Crew Module as flown on Artemis I (2022-12-11), the first U.S.
+  skip reentry. Lifting blunt capsule (Apollo-heritage spherical-segment forebody) flown
+  bank-managed. Mass and L/D are sourced DESIGN RANGES (single-value schema stores the
+  midpoint; the range is recorded in source/notes). Aerodynamics cite the Orion aero
+  database (Bibb, NTRS 20110013644); the precise CD/CL/trim-vs-Mach curves are figure-based
+  and not digitized, so the trim attitude is tagged NOT_VALIDATED.
+
+properties:
+  mass:
+    value: 10160.5
+    unit: kg
+    validation: ASSERTED
+    source: "McNamara et al., NTRS 20140004224: Orion entry design mass range 9,934-10,387 kg (midpoint stored)"
+    notes: "Design range 9934-10387 kg; the single-value schema stores the 10160.5 kg midpoint."
+
+  reference_area:
+    value: 19.79
+    unit: m^2
+    validation: ASSERTED
+    source: "Orion CM maximum diameter 5.02 m (NASA Orion program dimension); S = pi/4 * d^2"
+    notes: "Aerodynamic reference area = maximum cross-sectional (base) area."
+
+  nose_radius:
+    value: 6.03
+    unit: m
+    validation: ASSERTED
+    source: "Orion heatshield spherical-segment radius ~6.03 m (~1.2 * base diameter, Apollo-heritage)"
+    notes: "Effective forebody radius for a spherical-segment blunt capsule."
+
+  drag_coefficient:
+    value: 1.40
+    unit: ""
+    validation: ASSERTED
+    source: "Bibb et al., Orion aerodynamic database, NTRS 20110013644 (hypersonic trim C_D order ~1.4)"
+    notes: >
+      Commonly-cited hypersonic trim drag-coefficient order for the Orion CM. The precise
+      CD/CL vs Mach curves are figure-based in NTRS 20110013644 and are NOT digitized; this
+      single value is not used in the Gate-3 scaffold (no forward sim is run there).
+
+  lift_to_drag:
+    value: 0.25
+    unit: ""
+    validation: ASSERTED
+    source: "McNamara et al., NTRS 20140004224: Orion trim L/D design range 0.23-0.27 (midpoint stored)"
+    notes: "Design range 0.23-0.27; midpoint 0.25 stored. The bank-managed skip uses this lift."
+
+  trim_angle_of_attack:
+    value: 0.0
+    unit: rad
+    validation: NOT_VALIDATED
+    source: "Orion hypersonic trim attitude is figure-based in Bibb et al., NTRS 20110013644 (not digitized)"
+    notes: >
+      Placeholder. The Orion trim angle of attack vs Mach lives in the aero-database
+      figures and has not been digitized; tagging it NOT_VALIDATED keeps the vehicle's
+      weakest-link provenance NOT_VALIDATED, which is the honest state for a Gate-3 scaffold.
+
+  half_cone_angle:
+    value: 0.5760
+    unit: rad
+    validation: ASSERTED
+    source: "Orion forebody is a spherical segment (Apollo-heritage), approximated as a cap"
+    notes: >
+      ~33 deg. Orion's forebody is a spherical segment, not a sphere-cone; this angle only
+      keeps the Modified-Newtonian model a spherical cap. Not used in the Gate-3 scaffold.

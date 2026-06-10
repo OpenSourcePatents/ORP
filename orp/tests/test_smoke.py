@@ -48,6 +48,8 @@ ALL_MODULES = [
     "orp.core.simulation.stepper",
     "orp.core.simulation.engine",
     "orp.core.frames",
+    "orp.gates",
+    "orp.gates.gate3_artemis",
     "orp.gui",
 ]
 
