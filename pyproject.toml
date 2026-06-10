@@ -41,6 +41,9 @@ dependencies = [
 dev = [
     "pytest>=7.0",
 ]
+plot = [
+    "matplotlib>=3.6",
+]
 
 [project.urls]
 Homepage = "https://github.com/OpenSourcePatents/ORP"
