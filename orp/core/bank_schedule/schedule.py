@@ -20,11 +20,17 @@ must not exist in this codebase. Raise, do not compute.
 
 from __future__ import annotations
 
+import csv as _csv
 import math
 from bisect import bisect_right
 from collections.abc import Sequence
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 from orp.core.provenance.tags import ProvenanceTag, ValidationLevel
+
+if TYPE_CHECKING:
+    import os
 
 __all__ = ["BankSchedule"]
 
@@ -168,3 +174,211 @@ class BankSchedule:
     ) -> "BankSchedule":
         """Create a schedule from bank angles given in degrees (converted to radians)."""
         return cls(times, [math.radians(a) for a in bank_angles_deg], provenance=provenance)
+
+    @classmethod
+    def from_csv(
+        cls,
+        path: "str | os.PathLike[str]",
+        *,
+        provenance: ProvenanceTag,
+    ) -> "BankSchedule":
+        """Load a two-column CSV of (time_s, bank_angle_deg) and return a BankSchedule.
+
+        The CSV must have exactly two data columns: time in seconds (column 1) and bank
+        angle in degrees (column 2). Extra columns are ignored. A single header row is
+        auto-detected (if the first cell cannot be parsed as a number the row is treated as
+        a header and skipped). Lines whose first non-whitespace character is ``#`` are
+        treated as comments and ignored.
+
+        **Angle convention.** Angles may be given on either the −180..180 or the 0..360
+        degree convention; the convention is auto-detected from the data and recorded in
+        the provenance notes. The schedule is normalised internally to the −180..180
+        convention (i.e. values in (180, 360] are shifted by −360°) before converting to
+        radians.
+
+        **Strict validation — the method refuses rather than repairs.**
+
+        Raises:
+            TypeError: if ``provenance`` is not supplied (it is keyword-only with no
+                default and is mandatory).
+            ValueError: for any of the following:
+                - A cell in the time or angle column is blank or cannot be parsed as a
+                  number (including cells that contain ``NaN`` or ``Inf`` literals).
+                - A cell value is a float NaN or infinity after parsing.
+                - A time value appears more than once (duplicate timestamps).
+                - The time column is not strictly increasing (non-monotonic).
+                - A row whose angle cell contains the literal text ``GAP`` (case-
+                  insensitive) or a row flagged as a gap/occluded sample — the caller
+                  must filter gap rows before passing the file to this method.
+                - The file contains no data rows (after comment and header stripping).
+
+        Args:
+            path: Path to the CSV file (``str`` or ``pathlib.Path``).
+            provenance: Mandatory provenance tag describing the source and validation
+                status of this control history. There is no default; callers must supply
+                one explicitly.
+
+        Returns:
+            A :class:`BankSchedule` with times in seconds and bank angles in radians,
+            normalised to the −180..180 convention. The supplied ``provenance`` is
+            preserved but its ``notes`` field is augmented with the detected angle
+            convention.
+        """
+        path = Path(path)
+        times: list[float] = []
+        angles_deg: list[float] = []
+        header_skipped = False
+
+        with path.open(encoding="utf-8", newline="") as f:
+            reader = _csv.reader(f)
+            for lineno, row in enumerate(reader, start=1):
+                # Skip comment lines (first non-whitespace character is #).
+                if not row or row[0].lstrip().startswith("#"):
+                    continue
+                if len(row) < 2:
+                    raise ValueError(
+                        f"Row {lineno} in {path.name!r} has fewer than 2 columns; "
+                        "expected time_s and bank_angle_deg."
+                    )
+
+                raw_t = row[0].strip()
+                raw_a = row[1].strip()
+
+                # Auto-detect header: if time cell is non-numeric on the very first data
+                # row, treat it as a header and skip it (only once).
+                if not header_skipped and not _is_numeric(raw_t):
+                    header_skipped = True
+                    continue
+
+                # --- time cell ---
+                if not raw_t:
+                    raise ValueError(
+                        f"Row {lineno} in {path.name!r}: time cell is blank. "
+                        "Blank cells are not accepted; filter or remove the row."
+                    )
+                t = _parse_float(raw_t, "time", lineno, path.name)
+
+                # --- angle cell ---
+                if not raw_a:
+                    raise ValueError(
+                        f"Row {lineno} in {path.name!r}: bank angle cell is blank at "
+                        f"t={raw_t} s. Blank cells are not accepted; do not interpolate "
+                        "over gaps — filter or remove the row before loading."
+                    )
+                # Reject literal gap markers.
+                if raw_a.lower() in ("gap", "gap_occluded", "occluded", "nan", "inf",
+                                     "-inf", "+inf"):
+                    raise ValueError(
+                        f"Row {lineno} in {path.name!r}: bank angle cell contains "
+                        f"{raw_a!r} at t={raw_t} s. Marked gaps and non-finite markers "
+                        "are not accepted. Remove or filter these rows before loading."
+                    )
+                a = _parse_float(raw_a, "bank angle", lineno, path.name)
+
+                times.append(t)
+                angles_deg.append(a)
+
+        if not times:
+            raise ValueError(
+                f"No data rows found in {path.name!r}. "
+                "The file must contain at least one numeric time/angle pair."
+            )
+
+        # --- duplicate timestamp check ---
+        seen: set[float] = set()
+        for i, t in enumerate(times):
+            if t in seen:
+                raise ValueError(
+                    f"Duplicate timestamp {t} s found in {path.name!r}. "
+                    "Each time value must appear exactly once."
+                )
+            seen.add(t)
+
+        # --- monotonicity check ---
+        for i in range(1, len(times)):
+            if times[i] <= times[i - 1]:
+                raise ValueError(
+                    f"Non-monotonic time at index {i} in {path.name!r}: "
+                    f"{times[i - 1]} s followed by {times[i]} s. "
+                    "Time values must be strictly increasing."
+                )
+
+        # --- angle-convention detection ---
+        has_negative = any(a < 0.0 for a in angles_deg)
+        has_above_180 = any(a > 180.0 for a in angles_deg)
+
+        if has_negative and has_above_180:
+            raise ValueError(
+                f"Angle values in {path.name!r} are inconsistent: some are negative and "
+                "some exceed 180 deg. Cannot determine a single convention (-180..180 or "
+                "0..360). Normalise the angles to one convention before loading."
+            )
+
+        if has_above_180:
+            convention_note = (
+                "Angle convention detected: 0..360 degrees (values exceed 180 deg); "
+                "normalised internally to the -180..180 convention."
+            )
+            angles_deg = [a - 360.0 if a > 180.0 else a for a in angles_deg]
+        elif has_negative:
+            convention_note = (
+                "Angle convention detected: -180..180 degrees (negative values present); "
+                "no normalisation needed."
+            )
+        else:
+            # All angles in [0, 180]: ambiguous — assume -180..180 (no shift needed).
+            convention_note = (
+                "Angle convention: all values in [0, 180] — ambiguous. "
+                "Assumed -180..180 (no normalisation applied)."
+            )
+
+        # Augment the provenance notes with the detected convention.
+        aug_notes = (
+            (provenance.notes + " " if provenance.notes else "") + convention_note
+        ).strip()
+        augmented_provenance = ProvenanceTag(
+            level=provenance.level,
+            source=provenance.source,
+            notes=aug_notes,
+        )
+
+        bank_angles_rad = [math.radians(a) for a in angles_deg]
+        return cls(times, bank_angles_rad, provenance=augmented_provenance)
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers (not part of the public API)
+# ---------------------------------------------------------------------------
+
+def _is_numeric(text: str) -> bool:
+    """Return True if *text* can be parsed as a float."""
+    try:
+        float(text)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def _parse_float(text: str, field: str, lineno: int, filename: str) -> float:
+    """Parse *text* as a float; raise ValueError with a plain-language message on failure.
+
+    Also rejects NaN and infinite values even if they parse successfully.
+    """
+    try:
+        value = float(text)
+    except ValueError:
+        raise ValueError(
+            f"Row {lineno} in {filename!r}: {field} cell {text!r} cannot be parsed as a "
+            "number. Remove or fix the cell before loading."
+        ) from None
+    if math.isnan(value):
+        raise ValueError(
+            f"Row {lineno} in {filename!r}: {field} cell {text!r} is NaN. "
+            "NaN values are not accepted."
+        )
+    if math.isinf(value):
+        raise ValueError(
+            f"Row {lineno} in {filename!r}: {field} cell {text!r} is infinite. "
+            "Infinite values are not accepted."
+        )
+    return value
