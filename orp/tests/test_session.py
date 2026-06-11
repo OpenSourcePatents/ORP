@@ -6,8 +6,9 @@ Coverage:
     (fresh objects, no shared state), rerun, and assert the two trajectories are
     bit-identical at the byte level across every FlightData channel, using the same
     struct-pack NaN-safe technique as the Task 1 from_csv follow-up test.
-  - Refusal over repair: a tampered schedule value, a tampered vehicle YAML, and a
-    missing frame tag each make load raise (naming the offending component, both hashes
+  - Refusal over repair: a tampered schedule value, a tampered vehicle YAML, a missing
+    frame tag, an unrecognised frame, and an inertial frame (refused with convert-first-
+    then-save guidance) each make load raise (naming the offending component, both hashes
     shown for integrity failures).
   - A round-trip for each of the three schedule source kinds: constant, arrays, csv.
   - Saving is pure recording: save_session does not mutate or upgrade provenance.
@@ -255,6 +256,31 @@ class TestRefusalOverRepair:
         with pytest.raises(S.SessionFormatError) as exc:
             S.load_session(p)
         assert "frame" in str(exc.value).lower()
+
+    def test_inertial_frame_tag_refused(self, tmp_path: Path) -> None:
+        # 'inertial' is a recognised frame string, so it passes the membership check, but
+        # session loading refuses it explicitly with convert-first-then-save guidance —
+        # distinct from the generic unknown-frame error above.
+        sched, source = _constant_schedule()
+        cond = _conditions(sched)
+        p = tmp_path / "inertial.yaml"
+        S.save_session(p, conditions=cond, vehicle_name=_VEHICLE, schedule_source=source)
+
+        text = p.read_text(encoding="utf-8")
+        inertial = text.replace(
+            f"  frame: {S.FRAME_PLANET_RELATIVE}\n", f"  frame: {S.FRAME_INERTIAL}\n"
+        )
+        assert inertial != text, "test setup: expected a frame line to retag"
+        p.write_text(inertial, encoding="utf-8")
+
+        with pytest.raises(S.SessionFormatError) as exc:
+            S.load_session(p)
+        msg = str(exc.value)
+        assert "inertial" in msg.lower()
+        assert "orp.core.frames" in msg
+        assert "convert first" in msg.lower()
+        # It must NOT be the generic unknown-frame message.
+        assert "must be one of" not in msg
 
     def test_unknown_vehicle_refused(self, tmp_path: Path) -> None:
         sched, source = _constant_schedule()

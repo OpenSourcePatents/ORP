@@ -34,7 +34,11 @@ never something to paper over:
 * a SHA-256 mismatch on the vehicle YAML, or on the schedule's numerical content, raises
   :class:`SessionIntegrityError` naming exactly which component changed and showing both
   the saved and the recomputed hash;
-* a missing or invalid ``frame`` tag raises :class:`SessionFormatError`;
+* a missing ``frame`` tag, or an unrecognised one, raises :class:`SessionFormatError`;
+* a ``frame`` of ``inertial`` is refused with its own message: session files record the
+  planet-relative state the engine actually consumed, inertial entry states are converted
+  to planet-relative at the CLI boundary via :mod:`orp.core.frames`, and the path is
+  convert first, then save. Loading never performs that conversion itself;
 * an unknown vehicle or planet name raises (``FileNotFoundError`` / ``KeyError``,
   surfaced by the underlying registries).
 
@@ -434,6 +438,14 @@ def load_session(
     if frame not in VALID_FRAMES:
         raise SessionFormatError(
             f"entry_state.frame is {frame!r}; must be one of {VALID_FRAMES}."
+        )
+    if frame == FRAME_INERTIAL:
+        raise SessionFormatError(
+            "entry_state.frame is 'inertial', which session loading refuses. Session "
+            "files record the planet-relative state the engine actually consumed; "
+            "inertial entry states are converted to planet-relative at the CLI boundary "
+            "via orp.core.frames. The path is: convert first, then save. No conversion "
+            "is performed inside session loading."
         )
 
     # --- bank schedule: rebuild from source + verify content hash ---
