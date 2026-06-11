@@ -8,6 +8,9 @@ Coverage:
     the Artemis CSV) produces bank angles identical to the existing in-repo
     loading path (load_digitized_schedule) at every sample point and when
     replayed through the Gate 3 machinery.
+  - The actual Gate 3 propagation (gr.run_replay), run once per loading path,
+    produces bit-identical trajectories: every fd.ALL_TYPES channel of the
+    state history and every derived channel the gate reports.
   - ValueError for each invalid-input class: blank time cell, blank angle
     cell, marked gap in angle cell, NaN/Inf angle literal, non-numeric cell,
     non-monotonic times, duplicate timestamps, inconsistent convention, and
@@ -19,12 +22,16 @@ from __future__ import annotations
 
 import csv
 import math
+import struct
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
 
 from orp.core.bank_schedule.schedule import BankSchedule
 from orp.core.provenance.tags import ProvenanceTag, ValidationLevel
+from orp.core.simulation import SimulationEngine
+from orp.core.simulation import flight_data as fd
 from orp.gates import gate3_artemis_replay as gr
 
 # ---------------------------------------------------------------------------
@@ -257,6 +264,98 @@ class TestGate3ReplayIdentity:
             t += 0.5
             n += 1
         assert n > 0
+
+
+# ---------------------------------------------------------------------------
+# Test: actual Gate 3 propagation, trajectories bit-identical
+# ---------------------------------------------------------------------------
+
+def _bits(values: Sequence[float]) -> bytes:
+    """IEEE-754 byte image of a float series (bit-level identity, NaN-safe)."""
+    return struct.pack(f"<{len(values)}d", *values)
+
+
+def _assert_bit_identical(a: object, b: object, path: str = "report") -> None:
+    """Recursively assert equality with floats compared at the bit level."""
+    assert type(a) is type(b), f"{path}: type {type(a).__name__} != {type(b).__name__}"
+    if isinstance(a, float):
+        assert struct.pack("<d", a) == struct.pack("<d", b), (
+            f"{path}: {a!r} != {b!r} at the bit level"
+        )
+    elif isinstance(a, dict):
+        assert a.keys() == b.keys(), f"{path}: differing keys"
+        for k in a:
+            _assert_bit_identical(a[k], b[k], f"{path}[{k!r}]")
+    elif isinstance(a, (list, tuple)):
+        assert len(a) == len(b), f"{path}: length {len(a)} != {len(b)}"
+        for i, (x, y) in enumerate(zip(a, b)):
+            _assert_bit_identical(x, y, f"{path}[{i}]")
+    else:
+        assert a == b, f"{path}: {a!r} != {b!r}"
+
+
+class TestGate3PropagationBitIdentity:
+    """Run the ACTUAL Gate 3 propagation (gr.run_replay) twice — once with the
+    existing in-repo loading path, once with the from_csv hold-last extract —
+    and assert the trajectories are bit-identical across the full state history
+    (every channel in fd.ALL_TYPES, every sample) and across every derived
+    channel the gate reports (the full run_replay return value).
+
+    Deliberately tolerance-free: if this ever fails, the divergence is the
+    finding — report it; do not loosen the comparison or adjust either loader.
+    """
+
+    def test_full_propagation_bit_identical(
+        self,
+        schedule_holdlast: BankSchedule,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        captured: list = []
+
+        class _RecordingEngine(SimulationEngine):
+            """The real engine, recording each FlightData result it produces."""
+
+            def simulate(self, conditions):
+                result = super().simulate(conditions)
+                captured.append(result)
+                return result
+
+        monkeypatch.setattr(gr, "SimulationEngine", _RecordingEngine)
+
+        # Run 1: gate code untouched — the existing in-repo loading path.
+        report_existing = gr.run_replay(
+            mass_kg=10160.5, lift_to_drag=0.25, sign=+1.0
+        )
+
+        # Run 2: the same propagation with only the schedule source swapped
+        # to the from_csv hold-last extract (mapping A, sigma_ORP = +sigma_figure).
+        def _from_csv_loader(sign: float = 1.0) -> BankSchedule:
+            assert sign == +1.0, "this test exercises mapping A (+1) only"
+            return schedule_holdlast
+
+        monkeypatch.setattr(gr, "load_digitized_schedule", _from_csv_loader)
+        report_from_csv = gr.run_replay(
+            mass_kg=10160.5, lift_to_drag=0.25, sign=+1.0
+        )
+
+        assert len(captured) == 2, "expected exactly two recorded propagations"
+        branch_existing = captured[0].get_branch(0)
+        branch_from_csv = captured[1].get_branch(0)
+
+        # Full state history: every channel, every sample, bit-identical.
+        for dtype in fd.ALL_TYPES:
+            series_existing = branch_existing.get(dtype)
+            series_from_csv = branch_from_csv.get(dtype)
+            assert len(series_existing) == len(series_from_csv), (
+                f"channel {dtype}: {len(series_existing)} vs "
+                f"{len(series_from_csv)} samples"
+            )
+            assert _bits(series_existing) == _bits(series_from_csv), (
+                f"channel {dtype}: state histories are not bit-identical"
+            )
+
+        # Every derived channel the gate reports, bit-identical.
+        _assert_bit_identical(report_existing, report_from_csv)
 
 
 # ---------------------------------------------------------------------------

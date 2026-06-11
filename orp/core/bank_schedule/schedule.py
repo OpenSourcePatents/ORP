@@ -196,6 +196,15 @@ class BankSchedule:
         convention (i.e. values in (180, 360] are shifted by −360°) before converting to
         radians.
 
+        **Archival flight files are not loaded here.** Archival machine-digitized flight
+        files under ``data/flights/`` use a four-column flagged format (time, angle, flag,
+        source-column time) whose transition and occlusion rows are deliberately blank,
+        and they are loaded by their dedicated loader (for Artemis I,
+        :func:`orp.gates.gate3_artemis_replay.load_digitized_schedule`), not by this
+        method. ``from_csv`` refuses blank cells and gap markers by design, so routing
+        those files through it would either fail or require silently repairing flagged
+        samples — exactly the repair the flag column exists to prevent.
+
         **Strict validation — the method refuses rather than repairs.**
 
         Raises:
