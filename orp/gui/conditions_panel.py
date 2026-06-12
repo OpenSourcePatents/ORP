@@ -36,7 +36,7 @@ from PyQt6.QtWidgets import (
 )
 
 from orp.core.session import FRAME_INERTIAL, FRAME_PLANET_RELATIVE
-from orp.gui.app_state import AppState
+from orp.gui.app_state import AppState, EntryStateFields
 from orp.gui.vehicle_panel import level_color
 
 __all__ = ["ConditionsPanel"]
@@ -342,6 +342,32 @@ class ConditionsPanel(QWidget):
     def _request_run(self) -> None:
         self.sync_entry_state()
         self.run_requested.emit()
+
+    def reset_to_defaults(self) -> None:
+        """New Run: every input back to the engine defaults, no schedule chosen."""
+        self.state.entry = EntryStateFields()
+        for attribute, edit in (
+            ("velocity", self.velocity_edit),
+            ("fpa_deg", self.fpa_edit),
+            ("heading_deg", self.heading_edit),
+            ("altitude", self.altitude_edit),
+            ("lat_deg", self.lat_edit),
+            ("lon_deg", self.lon_edit),
+        ):
+            edit.setText(f"{getattr(self.state.entry, attribute):g}")
+        self.frame_combo.setCurrentText(FRAME_PLANET_RELATIVE)
+        self.planet_combo.setCurrentText("earth")
+        for radio in (self.constant_radio, self.csv_radio, self.piecewise_radio):
+            radio.setAutoExclusive(False)
+            radio.setChecked(False)
+            radio.setAutoExclusive(True)
+        self.constant_slider.setValue(0)
+        self.state.schedule = None
+        self.state.schedule_source = None
+        self.state.schedule_summary = ""
+        self.schedule_status.setStyleSheet("")
+        self.schedule_status.setText("No bank schedule chosen yet.")
+        self.rearm()
 
     def set_running(self, running: bool) -> None:
         """Disable the run button while a worker is active (re-armed on finish)."""

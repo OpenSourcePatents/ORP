@@ -373,6 +373,115 @@ class TestPanelLayout:
 
 
 # ---------------------------------------------------------------------------
+# File and Runs menus
+# ---------------------------------------------------------------------------
+
+class TestFileMenu:
+    def test_actions_exist_and_gate_on_a_completed_run(
+        self, qapp: QApplication
+    ) -> None:
+        window = MainWindow(AppState())
+        try:
+            assert window.save_session_action.text() == "Save Session"
+            assert window.export_csv_action.text() == "Export Trajectory CSV"
+            assert window.exit_action.text() == "Exit"
+            assert not window.save_session_action.isEnabled()
+            assert not window.export_csv_action.isEnabled()
+            # The panel buttons remain alongside the menu entries.
+            assert window.results_panel.save_session_button is not None
+            assert window.results_panel.export_csv_button is not None
+        finally:
+            window.deleteLater()
+
+    def test_menu_actions_wire_to_the_panel_code_paths(
+        self, qapp: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from PyQt6.QtWidgets import QFileDialog
+
+        state = _fast_state()
+        window = MainWindow(state)
+        try:
+            state.run_simulation()
+            window.results_panel.refresh(state)
+            window.save_session_action.setEnabled(True)
+            window.export_csv_action.setEnabled(True)
+
+            session_path = tmp_path / "menu_session.yaml"
+            monkeypatch.setattr(
+                QFileDialog, "getSaveFileName",
+                staticmethod(lambda *a, **k: (str(session_path), "")),
+            )
+            window.save_session_action.trigger()
+            assert session_path.is_file()
+            assert "Session saved to" in window.results_panel.message_label.text()
+
+            csv_path = tmp_path / "menu_trajectory.csv"
+            monkeypatch.setattr(
+                QFileDialog, "getSaveFileName",
+                staticmethod(lambda *a, **k: (str(csv_path), "")),
+            )
+            window.export_csv_action.trigger()
+            assert csv_path.is_file()
+            assert "Trajectory exported to" in window.results_panel.message_label.text()
+
+            # The panel button drives the identical slot and overwrites identically.
+            button_csv = csv_path.read_bytes()
+            window.results_panel.export_csv_button.click()
+            assert csv_path.read_bytes() == button_csv
+        finally:
+            window.deleteLater()
+
+
+class TestRunsMenu:
+    def test_new_run_resets_conditions_to_defaults(self, qapp: QApplication) -> None:
+        window = MainWindow(AppState())
+        try:
+            panel = window.conditions_panel
+            panel.constant_radio.setChecked(True)
+            panel.constant_slider.setValue(45)
+            panel.velocity_edit.setText("9999")
+            panel.sync_entry_state()
+            panel.frame_combo.setCurrentText("inertial")
+            assert window.state.can_run
+
+            assert window.new_run_action.text() == "New Run"
+            window.new_run_action.trigger()
+            assert window.state.schedule is None
+            assert not window.state.can_run
+            assert not panel.run_button.isEnabled()
+            assert window.state.frame == "planet-relative"
+            assert float(panel.velocity_edit.text()) == window.state.entry.velocity
+            assert window.state.entry.velocity != 9999.0
+        finally:
+            window.deleteLater()
+
+    def test_history_restores_a_previous_runs_flight_data_identity(
+        self, qapp: QApplication
+    ) -> None:
+        state = _fast_state()
+        window = MainWindow(state)
+        try:
+            first = state.run_simulation()
+            state.set_schedule_constant(15.0)  # different schedule, different run
+            second = state.run_simulation()
+            assert first is not second
+            assert len(state.run_history) == 2
+
+            window.rebuild_run_history()
+            actions = window.run_history_actions
+            assert len(actions) == 2
+            assert actions[-1].isChecked()  # latest run selected
+
+            actions[0].trigger()
+            assert state.flight_data is first  # FlightData identity restored
+            assert window.results_panel.message_label.text().startswith("Run complete")
+            actions[1].trigger()
+            assert state.flight_data is second
+        finally:
+            window.deleteLater()
+
+
+# ---------------------------------------------------------------------------
 # THE GUI WALL on the fully populated window
 # ---------------------------------------------------------------------------
 

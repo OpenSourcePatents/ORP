@@ -46,7 +46,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
     from orp.core.vehicles.base import EntryVehicle
     from orp.gates.summary import GatesReport
 
-__all__ = ["AppState", "EntryStateFields", "LEVEL_COLOR_HEX"]
+__all__ = ["AppState", "EntryStateFields", "RunRecord", "LEVEL_COLOR_HEX"]
 
 #: ValidationLevel -> display color (hex), shared by every provenance-colored widget.
 LEVEL_COLOR_HEX: dict[str, str] = {
@@ -82,6 +82,21 @@ class EntryStateFields:
 
 
 @dataclass
+class RunRecord:
+    """One completed run this launch — in-memory only, nothing persisted to disk."""
+
+    label: str
+    vehicle_name: str | None
+    planet_name: str
+    conditions: SimulationConditions
+    flight_data: "FlightData"
+    provenance_report: str
+    frame_conversion_note: str | None
+    schedule_source: "ScheduleSource | None"
+    gates_report: "GatesReport | None" = None
+
+
+@dataclass
 class AppState:
     """Owns SimulationConditions, FlightData, and the provenance report."""
 
@@ -104,6 +119,8 @@ class AppState:
     provenance_report: str | None = None
     frame_conversion_note: str | None = None
     gates_report: "GatesReport | None" = None
+    #: Completed runs this launch (session-scoped; never written to disk).
+    run_history: list[RunRecord] = field(default_factory=list)
 
     # ----- inputs -----------------------------------------------------------------
 
@@ -271,6 +288,21 @@ class AppState:
             engine=engine,
             vehicle_name=self.vehicle_name or (self.vehicle.name if self.vehicle else "?"),
         )
+        self.run_history.append(
+            RunRecord(
+                label=(
+                    f"Run {len(self.run_history) + 1}: "
+                    f"{self.vehicle_name or '?'} on {self.planet_name}"
+                ),
+                vehicle_name=self.vehicle_name,
+                planet_name=self.planet_name,
+                conditions=conditions,
+                flight_data=result,
+                provenance_report=self.provenance_report,
+                frame_conversion_note=self.frame_conversion_note,
+                schedule_source=self.schedule_source,
+            )
+        )
         return result
 
     def refresh_gates(self) -> "GatesReport":
@@ -278,7 +310,26 @@ class AppState:
         from orp.gates.summary import evaluate_gates
 
         self.gates_report = evaluate_gates()
+        if self.run_history:
+            self.run_history[-1].gates_report = self.gates_report
         return self.gates_report
+
+    def restore_run(self, index: int) -> RunRecord:
+        """Restore a completed run's results into the live state (in-memory only).
+
+        Only the RESULT side is restored (flight data, conditions, reports) so the
+        results panels can re-render it; the input panels are not touched.
+        """
+        record = self.run_history[index]
+        self.conditions = record.conditions
+        self.flight_data = record.flight_data
+        self.provenance_report = record.provenance_report
+        self.frame_conversion_note = record.frame_conversion_note
+        self.gates_report = record.gates_report
+        self.vehicle_name = record.vehicle_name
+        self.planet_name = record.planet_name
+        self.schedule_source = record.schedule_source
+        return record
 
     # ----- outputs -----------------------------------------------------------------
 

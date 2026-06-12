@@ -17,7 +17,7 @@ the worker finishes.
 from __future__ import annotations
 
 from PyQt6.QtCore import QThread, pyqtSignal
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QActionGroup
 from PyQt6.QtWidgets import QMainWindow, QProgressBar, QSplitter, QStatusBar
 
 from orp.gui.app_state import AppState
@@ -102,7 +102,80 @@ class MainWindow(QMainWindow):
         self.conditions_panel.run_requested.connect(self.start_run)
 
         self._splitter.setSizes(list(_DEFAULT_SPLITTER_SIZES))
+        self._build_file_menu()
+        self._build_runs_menu()
         self._build_view_menu()
+
+    def _build_file_menu(self) -> None:
+        """File menu: Save Session / Export Trajectory CSV (same slots as the
+        results-panel buttons, which stay) and Exit."""
+        self.file_menu = self.menuBar().addMenu("File")
+        self.file_menu.setObjectName("file_menu")
+
+        self.save_session_action = QAction("Save Session", self)
+        self.save_session_action.setObjectName("file_save_session")
+        self.save_session_action.setEnabled(False)
+        self.save_session_action.triggered.connect(
+            lambda: self.results_panel._save_session()
+        )
+        self.file_menu.addAction(self.save_session_action)
+
+        self.export_csv_action = QAction("Export Trajectory CSV", self)
+        self.export_csv_action.setObjectName("file_export_csv")
+        self.export_csv_action.setEnabled(False)
+        self.export_csv_action.triggered.connect(
+            lambda: self.results_panel._export_csv()
+        )
+        self.file_menu.addAction(self.export_csv_action)
+
+        self.file_menu.addSeparator()
+        self.exit_action = QAction("Exit", self)
+        self.exit_action.setObjectName("file_exit")
+        self.exit_action.triggered.connect(self.close)
+        self.file_menu.addAction(self.exit_action)
+
+    def _build_runs_menu(self) -> None:
+        """Runs menu: New Run plus the session-scoped history (in-memory only)."""
+        self.runs_menu = self.menuBar().addMenu("Runs")
+        self.runs_menu.setObjectName("runs_menu")
+
+        self.new_run_action = QAction("New Run", self)
+        self.new_run_action.setObjectName("runs_new_run")
+        self.new_run_action.triggered.connect(self.conditions_panel.reset_to_defaults)
+        self.runs_menu.addAction(self.new_run_action)
+        self.runs_menu.addSeparator()
+
+        self.run_history_group = QActionGroup(self)
+        self.run_history_group.setExclusive(True)
+        self.run_history_actions: list[QAction] = []
+
+    def rebuild_run_history(self) -> None:
+        """One checkable action per completed run this launch; latest checked."""
+        for action in self.run_history_actions:
+            self.runs_menu.removeAction(action)
+            self.run_history_group.removeAction(action)
+            action.deleteLater()
+        self.run_history_actions = []
+        for index, record in enumerate(self.state.run_history):
+            action = QAction(record.label, self)
+            action.setObjectName(f"runs_history_{index}")
+            action.setCheckable(True)
+            action.triggered.connect(
+                lambda _checked=False, i=index: self.select_run(i)
+            )
+            self.run_history_group.addAction(action)
+            self.runs_menu.addAction(action)
+            self.run_history_actions.append(action)
+        if self.run_history_actions:
+            self.run_history_actions[-1].setChecked(True)
+
+    def select_run(self, index: int) -> None:
+        """Restore a previous run's results panels from the in-memory history."""
+        record = self.state.restore_run(index)
+        self.results_panel.refresh(self.state)
+        self.save_session_action.setEnabled(True)
+        self.export_csv_action.setEnabled(True)
+        self.statusBar().showMessage(f"Showing {record.label}.")
 
     def _build_view_menu(self) -> None:
         """View menu: one checkable action per panel, plus Reset Layout.
@@ -158,6 +231,9 @@ class MainWindow(QMainWindow):
         self.progress_bar.setVisible(False)
         self.results_panel.refresh(self.state)  # one atomic pass
         self.conditions_panel.set_running(False)
+        self.rebuild_run_history()
+        self.save_session_action.setEnabled(True)
+        self.export_csv_action.setEnabled(True)
         self.statusBar().showMessage(
             f"Run complete - weakest-link provenance "
             f"{self.state.flight_data.provenance.level.name}."
