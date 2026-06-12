@@ -61,7 +61,7 @@ class TestLandingPage:
         )
         # Repos, license, byline.
         assert "https://github.com/OpenSourcePatents/ORP" in html
-        assert "https://github.com/OpenSourcePatents/openreentry" in html
+        assert "https://github.com/OpenSourcePatents/OpenReentry" in html  # canonical casing
         assert "GPL-3.0-or-later" in html
         assert "Charles Walter Dowd Jr. / OpenSourcePatents LLC" in html
 

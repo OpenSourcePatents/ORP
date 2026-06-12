@@ -436,8 +436,22 @@ def _cmd_gates(args: argparse.Namespace) -> int:
     """Run the gates; print each status exactly as the gate states it; exit 0 only
     when every gate reports its own pinned expected status (an honest FAIL that the
     gate's tests pin counts as expected). Evaluation lives in orp.gates.summary,
-    shared with every other front end so the wording can never drift."""
+    shared with every other front end so the wording can never drift.
+
+    Exit codes: 0 all gates as pinned; 1 unexpected deviation; 3 flight data absent
+    (installed package without a source checkout) — distinct from gate failure."""
+    from orp.gates import gate3_artemis_replay as gr
     from orp.gates.summary import evaluate_gates
+
+    # The digitized flight datasets live at the repo root (data/flights/), outside
+    # the installable package — an installed wheel cannot run the replay gates.
+    if not Path(gr.SCHEDULE_CSV).is_file():
+        print(
+            "orp gates: the flight-replay gates need a source checkout (data/flights/ "
+            "is not shipped in the package); clone "
+            "https://github.com/OpenSourcePatents/ORP and run from the repo root."
+        )
+        return 3
 
     report = evaluate_gates()
     for row in report.rows:

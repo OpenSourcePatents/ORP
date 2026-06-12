@@ -407,6 +407,23 @@ class TestGatesCommand:
         assert "NOT_VALIDATED" in artemis_lines[0]
         assert "Summary:" in stdout
 
+    def test_missing_flight_data_exits_3_with_one_honest_line(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """An installed package has no repo-root data/flights/: orp gates says so in
+        one line and exits 3 — distinct from 0 (as pinned) and 1 (deviation)."""
+        import orp.gates.gate3_artemis_replay as gr
+
+        monkeypatch.setattr(gr, "SCHEDULE_CSV", tmp_path / "absent.csv")
+        rc = main(["gates"])
+        captured = capsys.readouterr()
+        assert rc == 3
+        assert rc not in (0, 1)
+        [line] = [ln for ln in captured.out.splitlines() if ln.strip()]
+        assert "source checkout" in line
+        assert "Traceback" not in captured.err
+
     def test_unexpected_deviation_exits_nonzero(
         self, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
     ) -> None:

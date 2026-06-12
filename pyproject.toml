@@ -1,36 +1,39 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "orp"
-version = "0.0.1"
+dynamic = ["version"]
 description = "Open Reentry Platform — a forward-only atmospheric reentry simulator with first-class data provenance."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { file = "LICENSE" }
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 authors = [
-    { name = "Charles W. Dowd Jr.", email = "opensourcepatents@gmail.com" },
+    { name = "Charles Walter Dowd Jr.", email = "opensourcepatents@gmail.com" },
 ]
 keywords = [
     "reentry",
     "atmospheric-entry",
     "trajectory",
+    "aerospace",
     "simulation",
-    "aerodynamics",
-    "mars",
-    "provenance",
 ]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    # The OSI license classifier is intentionally absent: PEP 639 superseded license
+    # classifiers with the license expression above, and setuptools >= 77 rejects the
+    # combination (InvalidConfigError). PyPI renders the license from the expression.
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Scientific/Engineering :: Astronomy",
+    "Operating System :: OS Independent",
 ]
 dependencies = [
     "numpy>=1.23",
@@ -53,8 +56,12 @@ gui = [
 orp = "orp.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/OpenSourcePatents/ORP"
+Homepage = "https://orp.opensourceforall.com"
 Source = "https://github.com/OpenSourcePatents/ORP"
+Companion = "https://github.com/OpenSourcePatents/OpenReentry"
+
+[tool.setuptools.dynamic]
+version = { attr = "orp.__version__" }
 
 [tool.setuptools.packages.find]
 include = ["orp*"]
