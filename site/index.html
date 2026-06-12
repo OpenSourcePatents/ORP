@@ -1,0 +1,118 @@
+<!doctype html>
+<!--
+  ORP - Open Reentry Platform - static guide page (orp.opensourceforall.com).
+  SPDX-License-Identifier: GPL-3.0-or-later
+
+  HAND-MAINTAINED. Claims on this page must never exceed the README at
+  https://github.com/OpenSourcePatents/ORP - when in doubt, quote it verbatim.
+  Validation statuses below mirror the gates' honest states (orp gates) and must
+  be updated together with them, never ahead of them. No analytics, no trackers,
+  no external assets, no JavaScript.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ORP - Open Reentry Platform</title>
+<style>
+  :root {
+    --bg: #fafafa; --fg: #1c1c1c; --accent: #1565c0; --muted: #5a5a5a;
+    --card: #ffffff; --border: #d9d9d9; --amber: #ff8f00; --red: #c62828;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #232323; --fg: #ececec; --accent: #5e92f3; --muted: #a8a8a8;
+      --card: #2e2e2e; --border: #444444;
+    }
+  }
+  body {
+    margin: 0 auto; max-width: 46rem; padding: 2rem 1.25rem 4rem;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  h1 { color: var(--accent); margin-bottom: 0.2rem; }
+  h2 { border-bottom: 1px solid var(--border); padding-bottom: 0.25rem; margin-top: 2.2rem; }
+  code, pre { font-family: ui-monospace, Consolas, monospace; }
+  pre {
+    background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+    padding: 0.75rem 1rem; overflow-x: auto;
+  }
+  .tagline { color: var(--muted); margin-top: 0; }
+  .status { background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+            padding: 0.75rem 1rem; }
+  .status p { margin: 0.35rem 0; font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; }
+  .not-validated { color: var(--amber); font-weight: bold; }
+  .fail { color: var(--red); font-weight: bold; }
+  a { color: var(--accent); }
+  footer { margin-top: 3rem; color: var(--muted); font-size: 0.9rem;
+           border-top: 1px solid var(--border); padding-top: 1rem; }
+</style>
+</head>
+<body>
+
+<h1>ORP - Open Reentry Platform</h1>
+<p class="tagline">A forward-only atmospheric reentry simulator with first-class data provenance.</p>
+
+<h2>What ORP is</h2>
+<p>
+  ORP is a Python <strong>atmospheric reentry simulator</strong> for the descent phase
+  of flight. It integrates a vehicle's equations of motion <strong>forward in
+  time</strong> from a set of entry conditions and a <em>replayed</em> bank-angle
+  schedule, across multiple planetary environments (Earth and Mars from day one).
+  Bank schedules are inputs and the trajectory is the output; the inverse problem is
+  permanently out of scope, by architecture and by test. Every vehicle property and
+  every simulation output carries a validation tag, and, quoting the README verbatim:
+  &ldquo;a trajectory is only as trustworthy as the weakest input that produced
+  it.&rdquo; ORP reports that weakest link on every run instead of rounding up.
+</p>
+
+<h2>Install and run</h2>
+<p>ORP is not yet on PyPI; install from source with the GUI extra:</p>
+<pre>git clone https://github.com/OpenSourcePatents/ORP.git
+cd ORP
+pip install -e ".[gui]"
+orp gui</pre>
+<p>The command line works without the GUI extra: <code>orp run</code>,
+<code>orp vehicles</code>, <code>orp gates</code>.</p>
+
+<h2>Validation status - honest by design</h2>
+<p>
+  These statuses mirror what <code>orp gates</code> prints today, exactly as the gates
+  state them. None of ORP's flight-comparison gates is validated yet, and this page
+  will say so until the gates themselves say otherwise.
+</p>
+<div class="status">
+  <p>GATE 3: Artemis I (Orion) skip entry &mdash; STATUS: <span class="not-validated">NOT_VALIDATED</span></p>
+  <p>GATE: Stardust SRC ballistic entry &mdash; STATUS: <span class="not-validated">NOT_VALIDATED</span></p>
+  <p>GATE 3 REPLAY: Artemis I digitized bank command, forward replay &mdash; STATUS:
+     <span class="fail">FAIL</span> against the pre-registered tolerances; bank-sign
+     convention NOT LOCKED; the gate stays <span class="not-validated">NOT_VALIDATED</span></p>
+  <p>Summary: 0 of 3 gates validated, 3 scaffolded or honest-FAIL.</p>
+</div>
+<p>
+  The equations of motion are <code>VERIFIED_SOURCE</code> (verified term-by-term
+  against NASA CR-149170); environment models carry their own tags. The README and
+  <code>docs/gates/</code> hold the full picture.
+</p>
+
+<h2>Found a problem?</h2>
+<p>
+  <a href="https://github.com/OpenSourcePatents/ORP/issues/new?title=%5BGUI+feedback%5D+&amp;labels=bug">Report
+  a bug</a> &mdash; opens a GitHub issue with the same title prefix and label the
+  in-app button uses. Please include what you ran and what you expected.
+</p>
+
+<h2>Links</h2>
+<ul>
+  <li><a href="https://github.com/OpenSourcePatents/ORP">ORP repository</a></li>
+  <li><a href="https://github.com/OpenSourcePatents/openreentry">OpenReentry</a> &mdash; the companion reference implementation</li>
+</ul>
+
+<footer>
+  <p>Licensed under the GNU General Public License, version 3 or later
+     (GPL-3.0-or-later).</p>
+  <p>Charles Walter Dowd Jr. / OpenSourcePatents LLC</p>
+</footer>
+
+</body>
+</html>
