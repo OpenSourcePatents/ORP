@@ -5,6 +5,72 @@ It integrates a vehicle's equations of motion **forward in time** from a set of 
 conditions and a *replayed* bank-angle schedule, across multiple planetary
 environments (Earth and Mars from day one).
 
+## Quickstart
+
+Run one forward reentry (Apollo capsule, Earth, a constant 60° bank command) from the
+repo root:
+
+```text
+$ python -m orp.cli run --vehicle apollo --planet earth --frame planet-relative --bank-deg 60 --out out/demo
+Run complete: 4378 samples, terminated by GROUND_HIT at t=437.700 s.
+Peak deceleration: 11.2043 g
+Peak heat rate: 870448 W/m^2
+Final state: altitude -5.5 m, velocity 75.95 m/s, latitude -1.23649 deg, longitude 9.62559 deg, flight-path angle -79.2518 deg, heading 242.1849 deg
+Run provenance (weakest link): NOT_VALIDATED
+Outputs written to out/demo
+```
+
+The output directory holds `trajectory.csv` (every flight-data channel), the five
+standard figures, `session.yaml` (a reproducible record of the run's inputs), and
+`provenance.txt`. Every run states its **weakest-link provenance** because a trajectory
+is only as trustworthy as the least-validated input that produced it — quoting one
+strong component would launder the weak ones. The line above says `NOT_VALIDATED`
+because a hand-typed `--bank-deg` constant is an unsourced control history, and the run
+says so rather than rounding up.
+
+`orp vehicles` lists the vehicle library with per-property provenance;
+`orp gates` runs the validation gates and reports their statuses exactly as the gates
+state them (today: scaffolded / honest-FAIL, none validated).
+
+### Replaying a recorded bank history (`--bank-csv` / `BankSchedule.from_csv`)
+
+`from_csv` loads a two-column CSV — time in seconds, commanded bank angle in degrees —
+with an optional header row, `#` comment lines, strictly increasing times, and no blank
+cells, NaNs, or gap markers (it refuses rather than repairs; angles may use either the
+−180..180 or 0..360 convention, detected and recorded in the provenance notes):
+
+```csv
+time_s,bank_cmd_deg
+0.0,15.0
+115.5,-15.0
+390.5,15.0
+```
+
+The worked example in this repo is the Artemis I commanded-bank history,
+`data/flights/artemis1_bank_commanded.csv`, digitized from AAS 24-174 Figure 12(a). It
+carries its dataset tag verbatim:
+
+> DATASET TAG: MACHINE-DIGITIZED (pixel extraction from a published figure; not flight
+> telemetry)
+
+and its sign caveat verbatim:
+
+> Sign convention: signed bank EXACTLY as plotted in Figure 12(a). The paper text
+> defines no bank sign convention (pages 3-7 searched verbatim); the physical meaning
+> of the sign is locked only by the Gate-3 crossrange comparison (see docs/gates/).
+> Flagged for OpenReentry [APPROX-ROTATION].
+
+That file uses a four-column flagged format (transition/occlusion samples are
+deliberately blank) and is loaded by its dedicated loader,
+`orp.gates.gate3_artemis_replay.load_digitized_schedule`; `from_csv` deliberately
+refuses it, so a two-column hold-last extract is the way to replay it through
+`--bank-csv` (see `orp/tests/test_bank_schedule_from_csv.py` for the exact recipe).
+
+Documented limitation: reloading `session.yaml` with `load_session` and re-running
+`SimulationEngine` does not yet reproduce the CLI trajectory, because the session
+schema does not record the aerodynamic-calculator choice (the CLI runs constant
+vehicle coefficients; the reloaded session falls back to the engine default).
+
 ## Three non-negotiable principles
 
 1. **Forward simulation only.**

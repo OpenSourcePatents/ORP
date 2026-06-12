@@ -346,7 +346,9 @@ def _cmd_run(args: argparse.Namespace) -> int:
         f"latitude {branch.get_last(fd.TYPE_LATITUDE):.5f} deg, "
         f"longitude {branch.get_last(fd.TYPE_LONGITUDE):.5f} deg, "
         f"flight-path angle {branch.get_last(fd.TYPE_FLIGHT_PATH_ANGLE):.4f} deg, "
-        f"heading {branch.get_last(fd.TYPE_HEADING):.4f} deg"
+        # Display-only wrap to [0, 360); the recorded channel (trajectory.csv) is
+        # left exactly as the engine integrated it.
+        f"heading {branch.get_last(fd.TYPE_HEADING) % 360.0:.4f} deg"
     )
     print(f"Run provenance (weakest link): {result.provenance.level.name}")
     print(f"Outputs written to {out}")
