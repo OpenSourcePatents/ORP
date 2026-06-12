@@ -249,9 +249,14 @@ class SimulationStepper(ABC):
         gravity = conditions.planet.gravity.get_gravity(status.world_position())
         mass = conditions.vehicle.mass.get()
 
-        # Sensed deceleration (g-load) = total aerodynamic force / weight-equivalent.
-        aero_load = math.hypot(drag, lift)
-        deceleration_g = aero_load / (mass * _STANDARD_GRAVITY) if mass > 0 else 0.0
+        # Specific force: aerodynamic force per unit mass (m/s^2), decomposed on the
+        # air-relative axes the forces are already defined on — axial along the drag
+        # axis, lateral along the lift axis. The sensed g-load is, by definition, the
+        # RSS of these components expressed in standard gravities; computing it from
+        # them keeps the identity exact (no duplicate physics, one source of truth).
+        specific_axial = drag / mass if mass > 0 else 0.0
+        specific_lateral = lift / mass if mass > 0 else 0.0
+        deceleration_g = math.hypot(specific_axial, specific_lateral) / _STANDARD_GRAVITY
 
         # Sutton-Graves stagnation-point convective heating: q̇ = k·√(ρ/R_n)·V³ (W/m²),
         # with the planet's gas-specific Sutton-Graves constant (Earth air vs Mars CO₂).
@@ -266,12 +271,18 @@ class SimulationStepper(ABC):
             )
 
         branch.set_value(fd.TYPE_MACH, flight_conditions.mach)
+        branch.set_value(fd.TYPE_DRAG_COEFFICIENT, forces.drag_coefficient)
+        branch.set_value(fd.TYPE_LIFT_COEFFICIENT, forces.lift_coefficient)
+        branch.set_value(fd.TYPE_LIFT_TO_DRAG, forces.lift_to_drag)
+        branch.set_value(fd.TYPE_ANGLE_OF_ATTACK, math.degrees(flight_conditions.angle_of_attack))
         branch.set_value(fd.TYPE_DYNAMIC_PRESSURE, dynamic_pressure)
         branch.set_value(fd.TYPE_DENSITY, density)
         branch.set_value(fd.TYPE_DRAG_FORCE, drag)
         branch.set_value(fd.TYPE_LIFT_FORCE, lift)
         branch.set_value(fd.TYPE_GRAVITY, gravity)
         branch.set_value(fd.TYPE_DECELERATION, deceleration_g)
+        branch.set_value(fd.TYPE_SPECIFIC_FORCE_AXIAL, specific_axial)
+        branch.set_value(fd.TYPE_SPECIFIC_FORCE_LATERAL, specific_lateral)
         branch.set_value(fd.TYPE_HEAT_RATE, heat_rate)
 
 

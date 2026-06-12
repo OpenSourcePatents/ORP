@@ -65,11 +65,21 @@ TYPE_FLIGHT_PATH_ANGLE = FlightDataType("gamma", "Flight-path angle", "deg")
 TYPE_HEADING = FlightDataType("psi", "Heading", "deg")
 TYPE_BANK_ANGLE = FlightDataType("sigma", "Bank angle", "deg")
 TYPE_MACH = FlightDataType("M", "Mach number", "")
+TYPE_DRAG_COEFFICIENT = FlightDataType("CD", "Drag coefficient", "")
+TYPE_LIFT_COEFFICIENT = FlightDataType("CL", "Lift coefficient", "")
+TYPE_LIFT_TO_DRAG = FlightDataType("LD", "Lift-to-drag ratio", "")
+TYPE_ANGLE_OF_ATTACK = FlightDataType("alpha", "Angle of attack", "deg")
 TYPE_DYNAMIC_PRESSURE = FlightDataType("q", "Dynamic pressure", "Pa")
 TYPE_DENSITY = FlightDataType("rho", "Atmospheric density", "kg/m^3")
 TYPE_DRAG_FORCE = FlightDataType("D", "Drag force", "N")
 TYPE_LIFT_FORCE = FlightDataType("L", "Lift force", "N")
 TYPE_DECELERATION = FlightDataType("nload", "Deceleration", "g")
+TYPE_SPECIFIC_FORCE_AXIAL = FlightDataType(
+    "f_ax", "Axial specific force (drag axis)", "m/s^2"
+)
+TYPE_SPECIFIC_FORCE_LATERAL = FlightDataType(
+    "f_lat", "Lateral specific force (lift axis)", "m/s^2"
+)
 TYPE_GRAVITY = FlightDataType("g", "Gravity", "m/s^2")
 TYPE_HEAT_RATE = FlightDataType("qdot", "Stagnation heat rate", "W/m^2")
 
@@ -84,11 +94,17 @@ ALL_TYPES: tuple[FlightDataType, ...] = (
     TYPE_HEADING,
     TYPE_BANK_ANGLE,
     TYPE_MACH,
+    TYPE_DRAG_COEFFICIENT,
+    TYPE_LIFT_COEFFICIENT,
+    TYPE_LIFT_TO_DRAG,
+    TYPE_ANGLE_OF_ATTACK,
     TYPE_DYNAMIC_PRESSURE,
     TYPE_DENSITY,
     TYPE_DRAG_FORCE,
     TYPE_LIFT_FORCE,
     TYPE_DECELERATION,
+    TYPE_SPECIFIC_FORCE_AXIAL,
+    TYPE_SPECIFIC_FORCE_LATERAL,
     TYPE_GRAVITY,
     TYPE_HEAT_RATE,
 )
