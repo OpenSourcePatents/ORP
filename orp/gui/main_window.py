@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import (
 )
 
 from orp.gui.app_state import AppState
+from orp.gui.vehicle_panel import VehiclePanel
 
 __all__ = ["MainWindow"]
 
@@ -50,12 +51,14 @@ class MainWindow(QMainWindow):
 
     def _build_panels(self) -> None:
         """Panels are attached here as they land (vehicle, conditions, results)."""
+        self.vehicle_panel = VehiclePanel(self.state, self)
+        self._splitter.addWidget(self.vehicle_panel)
+
         placeholder = QWidget(self)
         placeholder.setObjectName("orp_panel_placeholder")
         layout = QVBoxLayout(placeholder)
         note = QLabel(
-            "Panels load here: vehicle library, entry conditions and bank schedule, "
-            "results.",
+            "Panels load here: entry conditions and bank schedule, results.",
             placeholder,
         )
         note.setObjectName("orp_placeholder_note")
