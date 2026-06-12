@@ -250,6 +250,64 @@ class TestThreadedRun:
 
 
 # ---------------------------------------------------------------------------
+# Vehicle panel: vertical card list, no horizontal scrolling
+# ---------------------------------------------------------------------------
+
+class TestVehicleCards:
+    def test_no_horizontal_scrollbar_possible(self, qapp: QApplication) -> None:
+        from PyQt6.QtCore import Qt
+
+        window = MainWindow(AppState())
+        window.show()
+        try:
+            panel = window.vehicle_panel
+            assert (
+                panel.scroll_area.horizontalScrollBarPolicy()
+                == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+            )
+            assert not panel.scroll_area.horizontalScrollBar().isVisible()
+            assert panel.scroll_area.widgetResizable()  # cards track panel width
+        finally:
+            window.close()
+            window.deleteLater()
+
+    def test_every_property_has_all_four_fields(self, qapp: QApplication) -> None:
+        window = MainWindow(AppState())
+        try:
+            panel = window.vehicle_panel
+            vehicle = window.state.vehicle
+            assert vehicle is not None
+            tagged = vehicle.tagged_values()
+            assert set(panel.cards) == set(tagged)
+            for prop, tv in tagged.items():
+                card = panel.cards[prop]
+                assert card["name"].text() == prop
+                assert card["name"].font().bold()
+                assert card["value"].text().startswith(f"{tv.value:g}")
+                if tv.unit:
+                    assert tv.unit in card["value"].text()
+                level_name = tv.provenance.level.name
+                assert card["level"].text() == level_name
+                # The existing five-color code, rendered on the tag chip.
+                assert LEVEL_COLOR_HEX[level_name] in card["level"].styleSheet()
+                assert card["source"].text() == tv.provenance.source
+                for field in ("name", "value", "source"):
+                    assert card[field].wordWrap()
+        finally:
+            window.deleteLater()
+
+    def test_reload_rebuilds_cards(self, qapp: QApplication) -> None:
+        window = MainWindow(AppState())
+        try:
+            panel = window.vehicle_panel
+            before = set(panel.cards)
+            panel.reload_button.click()
+            assert set(panel.cards) == before  # rebuilt, same property set
+        finally:
+            window.deleteLater()
+
+
+# ---------------------------------------------------------------------------
 # Panel layout: resizable splitter, View-menu visibility toggles, Reset Layout
 # ---------------------------------------------------------------------------
 
