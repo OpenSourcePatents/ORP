@@ -314,11 +314,12 @@ class MainWindow(QMainWindow):
 
 def main() -> int:
     """Launch the ORP desktop interface (also reachable as ``orp gui``)."""
-    from PyQt6.QtWidgets import QApplication
+    from orp.gui.icon import orp_icon
 
     app = QApplication.instance()
     if app is None:
         app = QApplication([])
+    app.setWindowIcon(orp_icon())
     window = MainWindow(AppState())
     window.show()
     return app.exec()

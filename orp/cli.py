@@ -416,11 +416,13 @@ def _cmd_gui(args: argparse.Namespace) -> int:
         ) from None
 
     from orp.gui.app_state import AppState
+    from orp.gui.icon import orp_icon
     from orp.gui.main_window import MainWindow
 
     app = QApplication.instance()
     if app is None:
         app = QApplication([])
+    app.setWindowIcon(orp_icon())
     window = MainWindow(AppState())
     window.show()
     return app.exec()

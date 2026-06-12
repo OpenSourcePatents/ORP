@@ -548,6 +548,28 @@ class TestDarkMode:
 
 
 # ---------------------------------------------------------------------------
+# Application icon
+# ---------------------------------------------------------------------------
+
+class TestAppIcon:
+    def test_icon_is_non_null_with_all_required_sizes(
+        self, qapp: QApplication
+    ) -> None:
+        from PyQt6.QtCore import QSize
+
+        from orp.gui.icon import orp_icon
+
+        icon = orp_icon()
+        assert not icon.isNull()
+        available = icon.availableSizes()
+        for size in (16, 32, 256):
+            assert QSize(size, size) in available, f"no {size}px pixmap on the icon"
+            pixmap = icon.pixmap(size, size)
+            assert not pixmap.isNull()
+            assert pixmap.width() == size and pixmap.height() == size
+
+
+# ---------------------------------------------------------------------------
 # Glossary and (i) info icons
 # ---------------------------------------------------------------------------
 
