@@ -45,6 +45,9 @@ plot = [
     "matplotlib>=3.6",
 ]
 
+[project.scripts]
+orp = "orp.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/OpenSourcePatents/ORP"
 Source = "https://github.com/OpenSourcePatents/ORP"
