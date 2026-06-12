@@ -28,9 +28,18 @@ from PyQt6.QtWidgets import (
 )
 
 from orp.gui.app_state import AppState
+from orp.gui.info_icon import InfoIcon
 from orp.gui.vehicle_panel import level_color
 
 __all__ = ["ResultsPanel"]
+
+#: The landing-summary rows: (display label, glossary key), in AppState's order.
+_SUMMARY_ROWS: tuple[tuple[str, str], ...] = (
+    ("Peak deceleration", "peak deceleration"),
+    ("Peak heat rate", "peak heat rate"),
+    ("Peak dynamic pressure", "peak dynamic pressure"),
+    ("Impact velocity", "impact velocity"),
+)
 
 #: The eight standard plots: (tab title, plots-module function name).
 PLOT_TABS: tuple[tuple[str, str], ...] = (
@@ -100,13 +109,19 @@ class ResultsPanel(QWidget):
         self._gates_layout.addStretch(1)
         self.tabs.addTab(gates_page, "Gates")
 
-        # Landing summary + export row.
-        self.summary_table = QTableWidget(0, 2, self)
+        # Landing summary + export row. Rows are static (label, value, info icon);
+        # refresh fills the value column.
+        self.summary_table = QTableWidget(len(_SUMMARY_ROWS), 3, self)
         self.summary_table.setObjectName("landing_summary_table")
-        self.summary_table.setHorizontalHeaderLabels(["Quantity", "Value"])
+        self.summary_table.setHorizontalHeaderLabels(["Quantity", "Value", ""])
         self.summary_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.summary_table.verticalHeader().setVisible(False)
         self.summary_table.setMaximumHeight(150)
+        for index, (label, key) in enumerate(_SUMMARY_ROWS):
+            self.summary_table.setItem(index, 0, QTableWidgetItem(label))
+            self.summary_table.setItem(index, 1, QTableWidgetItem("-"))
+            self.summary_table.setCellWidget(index, 2, InfoIcon(key, self))
+        self.summary_table.resizeColumnsToContents()
         layout.addWidget(self.summary_table)
 
         buttons = QHBoxLayout()
@@ -195,10 +210,9 @@ class ResultsPanel(QWidget):
 
     def _refresh_summary(self, state: AppState) -> None:
         rows = state.landing_summary()
-        self.summary_table.setRowCount(len(rows))
-        for index, (label, value) in enumerate(rows):
-            self.summary_table.setItem(index, 0, QTableWidgetItem(label))
-            self.summary_table.setItem(index, 1, QTableWidgetItem(value))
+        assert [label for label, _ in rows] == [label for label, _ in _SUMMARY_ROWS]
+        for index, (_label, value) in enumerate(rows):
+            self.summary_table.item(index, 1).setText(value)
         self.summary_table.resizeColumnsToContents()
 
     def refresh_gates(self, state: AppState | None = None) -> None:

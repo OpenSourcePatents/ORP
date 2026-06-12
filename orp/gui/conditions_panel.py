@@ -37,6 +37,7 @@ from PyQt6.QtWidgets import (
 
 from orp.core.session import FRAME_INERTIAL, FRAME_PLANET_RELATIVE
 from orp.gui.app_state import AppState, EntryStateFields
+from orp.gui.info_icon import InfoIcon, label_with_info
 from orp.gui.vehicle_panel import level_color
 
 __all__ = ["ConditionsPanel"]
@@ -60,9 +61,11 @@ class ConditionsPanel(QWidget):
         # ----- entry state fields ----------------------------------------------------
         form = QFormLayout()
         self.velocity_edit = self._field("entry_velocity_edit", state.entry.velocity)
-        form.addRow("Entry speed (m/s)", self.velocity_edit)
+        form.addRow(label_with_info("Entry speed (m/s)", "entry speed", self),
+                    self.velocity_edit)
         self.fpa_edit = self._field("entry_fpa_edit", state.entry.fpa_deg)
-        form.addRow("Flight-path angle (deg)", self.fpa_edit)
+        form.addRow(label_with_info("Flight-path angle (deg)", "flight path angle", self),
+                    self.fpa_edit)
 
         self.heading_edit = self._field("entry_heading_edit", state.entry.heading_deg)
         self.heading_edit.setToolTip(
@@ -70,20 +73,28 @@ class ConditionsPanel(QWidget):
             "It is an input, not a target: ORP never accepts an endpoint and "
             "produces controls."
         )
-        form.addRow("Initial heading (input, not target)", self.heading_edit)
+        form.addRow(
+            label_with_info(
+                "Initial heading (input, not target)", "initial heading", self
+            ),
+            self.heading_edit,
+        )
 
         self.altitude_edit = self._field("entry_altitude_edit", state.entry.altitude)
-        form.addRow("Entry altitude (m)", self.altitude_edit)
+        form.addRow(label_with_info("Entry altitude (m)", "entry altitude", self),
+                    self.altitude_edit)
         self.lat_edit = self._field("entry_lat_edit", state.entry.lat_deg)
-        form.addRow("Entry latitude (deg)", self.lat_edit)
+        form.addRow(label_with_info("Entry latitude (deg)", "entry latitude", self),
+                    self.lat_edit)
         self.lon_edit = self._field("entry_lon_edit", state.entry.lon_deg)
-        form.addRow("Entry longitude (deg)", self.lon_edit)
+        form.addRow(label_with_info("Entry longitude (deg)", "entry longitude", self),
+                    self.lon_edit)
 
         # ----- planet + frame ----------------------------------------------------------
         self.planet_combo = QComboBox(self)
         self.planet_combo.setObjectName("planet_combo")
         self.planet_combo.addItems(["earth", "mars"])
-        form.addRow("Planet", self.planet_combo)
+        form.addRow(label_with_info("Planet", "planet", self), self.planet_combo)
 
         self.frame_combo = QComboBox(self)
         self.frame_combo.setObjectName("frame_combo")
@@ -92,7 +103,15 @@ class ConditionsPanel(QWidget):
             "Frame the entry state is expressed in. Mandatory; the engine consumes a "
             "planet-relative state."
         )
-        form.addRow("Entry-state frame", self.frame_combo)
+        frame_holder = QWidget(self)
+        frame_row = QHBoxLayout(frame_holder)
+        frame_row.setContentsMargins(0, 0, 0, 0)
+        frame_row.setSpacing(3)
+        frame_row.addWidget(self.frame_combo, stretch=1)
+        # One icon per frame meaning, right where the choice is made.
+        frame_row.addWidget(InfoIcon("planet-relative", frame_holder))
+        frame_row.addWidget(InfoIcon("inertial", frame_holder))
+        form.addRow(label_with_info("Entry-state frame", "frame", self), frame_holder)
         layout.addLayout(form)
 
         self.inertial_warning = QLabel(
@@ -108,9 +127,13 @@ class ConditionsPanel(QWidget):
         layout.addWidget(self.inertial_warning)
 
         # ----- schedule sub-panel ------------------------------------------------------
+        schedule_heading_row = QHBoxLayout()
         schedule_heading = QLabel("Bank schedule (a pre-recorded control input)", self)
         schedule_heading.setObjectName("schedule_subpanel_heading")
-        layout.addWidget(schedule_heading)
+        schedule_heading_row.addWidget(schedule_heading)
+        schedule_heading_row.addWidget(InfoIcon("bank angle", self))
+        schedule_heading_row.addStretch(1)
+        layout.addLayout(schedule_heading_row)
 
         mode_row = QHBoxLayout()
         self.constant_radio = QRadioButton("Constant angle", self)
@@ -119,8 +142,13 @@ class ConditionsPanel(QWidget):
         self.csv_radio.setObjectName("schedule_mode_csv")
         self.piecewise_radio = QRadioButton("Piecewise editor", self)
         self.piecewise_radio.setObjectName("schedule_mode_piecewise")
-        for radio in (self.constant_radio, self.csv_radio, self.piecewise_radio):
+        for radio, key in (
+            (self.constant_radio, "constant angle"),
+            (self.csv_radio, "CSV import"),
+            (self.piecewise_radio, "piecewise editor"),
+        ):
             mode_row.addWidget(radio)
+            mode_row.addWidget(InfoIcon(key, self))
         layout.addLayout(mode_row)
 
         self.schedule_stack = QStackedWidget(self)
@@ -136,12 +164,16 @@ class ConditionsPanel(QWidget):
         layout.addWidget(self.schedule_status)
 
         # ----- run arming ---------------------------------------------------------------
+        ceiling_row = QHBoxLayout()
         self.ceiling_label = QLabel("Provenance ceiling: (load a vehicle and schedule)", self)
         self.ceiling_label.setObjectName("provenance_ceiling_label")
         self.ceiling_label.setToolTip(
             "The best the run's weakest-link provenance can be, given these inputs."
         )
-        layout.addWidget(self.ceiling_label)
+        ceiling_row.addWidget(self.ceiling_label)
+        ceiling_row.addWidget(InfoIcon("weakest link", self))
+        ceiling_row.addStretch(1)
+        layout.addLayout(ceiling_row)
 
         self.run_button = QPushButton("Run forward simulation", self)
         self.run_button.setObjectName("run_button")
@@ -202,6 +234,9 @@ class ConditionsPanel(QWidget):
             "strict validation, refuses rather than repairs."
         )
         row.addWidget(self.csv_button)
+        # Digitized flight datasets carry this tag; its meaning matters when importing.
+        row.addWidget(InfoIcon("MACHINE-DIGITIZED", page))
+        row.addStretch(1)
         self.csv_button.clicked.connect(self._pick_csv)
         return page
 

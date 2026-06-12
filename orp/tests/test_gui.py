@@ -548,6 +548,101 @@ class TestDarkMode:
 
 
 # ---------------------------------------------------------------------------
+# Glossary and (i) info icons
+# ---------------------------------------------------------------------------
+
+class TestGlossary:
+    def test_every_glossary_key_renders_in_the_gui(self, qapp: QApplication) -> None:
+        from orp.gui.glossary import GLOSSARY
+        from orp.gui.info_icon import InfoIcon
+
+        window = MainWindow(AppState())
+        try:
+            icons = window.findChildren(InfoIcon)
+            rendered_keys = {icon.glossary_key for icon in icons}
+            assert rendered_keys == set(GLOSSARY), (
+                f"missing from GUI: {set(GLOSSARY) - rendered_keys}; "
+                f"unknown keys: {rendered_keys - set(GLOSSARY)}"
+            )
+        finally:
+            window.deleteLater()
+
+    def test_every_icon_resolves_to_a_nonempty_entry_as_tooltip(
+        self, qapp: QApplication
+    ) -> None:
+        from orp.gui.glossary import GLOSSARY
+        from orp.gui.info_icon import InfoIcon
+
+        window = MainWindow(AppState())
+        try:
+            for icon in window.findChildren(InfoIcon):
+                entry = GLOSSARY[icon.glossary_key]
+                assert entry.strip(), f"empty glossary entry for {icon.glossary_key!r}"
+                assert icon.toolTip() == entry
+        finally:
+            window.deleteLater()
+
+    def test_click_shows_the_glossary_text_in_a_popover(
+        self, qapp: QApplication, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from PyQt6.QtWidgets import QMessageBox
+
+        from orp.gui.glossary import GLOSSARY
+        from orp.gui.info_icon import InfoIcon
+
+        shown: list[tuple[str, str]] = []
+        monkeypatch.setattr(
+            QMessageBox, "information",
+            staticmethod(lambda _parent, title, text: shown.append((title, text))),
+        )
+        window = MainWindow(AppState())
+        try:
+            icon = window.findChildren(InfoIcon)[0]
+            icon.click()
+            assert shown == [(icon.glossary_key, GLOSSARY[icon.glossary_key])]
+        finally:
+            window.deleteLater()
+
+    def test_no_glossary_text_contains_endpoint_seeking_vocabulary(self) -> None:
+        """The honesty guard and the wall apply to tooltip content too (the same
+        negation-aware scanner as THE GUI WALL: 'an input, not a target' is the
+        wall's own signage)."""
+        from orp.gui.glossary import GLOSSARY
+        from orp.tests.test_gui_wall import _violations
+
+        offending = {
+            key: terms for key, text in GLOSSARY.items() if (terms := _violations(text))
+        }
+        assert not offending, f"endpoint-seeking vocabulary in glossary: {offending}"
+
+    def test_provenance_definitions_restate_the_documented_meanings_exactly(
+        self,
+    ) -> None:
+        """The tag entries must contain the documented sentences verbatim — plain
+        language may follow, but the meaning is never paraphrased or softened."""
+        from orp.core.provenance.tags import ValidationLevel
+        from orp.gui.glossary import GLOSSARY
+
+        for level in ValidationLevel:
+            assert level.description in GLOSSARY[level.name], (
+                f"{level.name}: glossary entry does not restate the documented "
+                f"meaning exactly ({level.description!r})"
+            )
+        # The dataset tag, verbatim from data/flights/artemis1_bank_commanded.csv.
+        assert (
+            "pixel extraction from a published figure; not flight telemetry"
+            in GLOSSARY["MACHINE-DIGITIZED"]
+        )
+        # The weakest-link principle, verbatim from the README/provenance docs.
+        assert (
+            "a trajectory is only as trustworthy as the weakest input that produced it"
+            in GLOSSARY["weakest link"]
+        )
+        # The heading entry states input, not target.
+        assert "an input, not a target" in GLOSSARY["initial heading"]
+
+
+# ---------------------------------------------------------------------------
 # THE GUI WALL on the fully populated window
 # ---------------------------------------------------------------------------
 

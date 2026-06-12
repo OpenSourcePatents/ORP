@@ -28,6 +28,7 @@ from PyQt6.QtWidgets import (
 )
 
 from orp.gui.app_state import LEVEL_COLOR_HEX, AppState
+from orp.gui.info_icon import InfoIcon, label_with_info
 
 __all__ = ["VehiclePanel", "level_color"]
 
@@ -48,9 +49,28 @@ class VehiclePanel(QWidget):
         self.setObjectName("vehicle_panel")
 
         layout = QVBoxLayout(self)
-        heading = QLabel("Vehicle library", self)
-        heading.setObjectName("vehicle_panel_heading")
-        layout.addWidget(heading)
+        layout.addWidget(label_with_info("Vehicle library", "vehicle", self))
+
+        # Color legend: one chip + (i) per ValidationLevel, worst first — the same
+        # five-color code every panel uses.
+        legend_row = QHBoxLayout()
+        for level_name in (
+            "NOT_VALIDATED",
+            "ASSERTED",
+            "VERIFIED_SOURCE",
+            "VERIFIED_CFD",
+            "VERIFIED_FLIGHT",
+        ):
+            chip = QLabel(level_name, self)
+            chip.setObjectName(f"legend_chip_{level_name}")
+            chip.setStyleSheet(
+                f"background-color: {level_color(level_name).name()}; color: white; "
+                "padding: 0px 3px; font-size: 7pt;"
+            )
+            legend_row.addWidget(chip)
+            legend_row.addWidget(InfoIcon(level_name, self))
+        legend_row.addStretch(1)
+        layout.addLayout(legend_row)
 
         chooser_row = QHBoxLayout()
         self.combo = QComboBox(self)
