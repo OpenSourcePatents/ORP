@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import (
 )
 
 from orp.gui.app_state import AppState
+from orp.gui.conditions_panel import ConditionsPanel
 from orp.gui.vehicle_panel import VehiclePanel
 
 __all__ = ["MainWindow"]
@@ -54,13 +55,17 @@ class MainWindow(QMainWindow):
         self.vehicle_panel = VehiclePanel(self.state, self)
         self._splitter.addWidget(self.vehicle_panel)
 
+        self.conditions_panel = ConditionsPanel(self.state, self)
+        self._splitter.addWidget(self.conditions_panel)
+        # Loading/reloading a vehicle can change the provenance ceiling.
+        self.vehicle_panel.vehicle_loaded.connect(
+            lambda _name: self.conditions_panel.rearm()
+        )
+
         placeholder = QWidget(self)
         placeholder.setObjectName("orp_panel_placeholder")
         layout = QVBoxLayout(placeholder)
-        note = QLabel(
-            "Panels load here: entry conditions and bank schedule, results.",
-            placeholder,
-        )
+        note = QLabel("Results load here after a run.", placeholder)
         note.setObjectName("orp_placeholder_note")
         note.setWordWrap(True)
         layout.addWidget(note)

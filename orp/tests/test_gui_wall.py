@@ -67,8 +67,10 @@ _FORBIDDEN_TERMS = (
     "impact point",
 )
 
-#: A term is tolerated only when explicitly negated right before it ("not a target").
-_NEGATION_BEFORE = re.compile(r"(\bnot\b|\bnever\b|\bno\b)\W{0,12}$")
+#: A term is tolerated only when explicitly negated right before it: a negation word,
+#: at most one article, then the term ("not target", "not a target", "never the
+#: target"). Nothing else may sit between the negation and the term.
+_NEGATION_BEFORE = re.compile(r"(\bnot\b|\bnever\b|\bno\b)(\s+(a|an|the))?\W{0,2}$")
 
 
 def _violations(text: str) -> list[str]:
