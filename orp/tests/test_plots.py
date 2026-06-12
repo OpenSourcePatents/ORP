@@ -56,6 +56,9 @@ class TestIndividualPlots:
             plots.plot_g_load_time,
             plots.plot_heat_rate_time,
             plots.plot_ground_track,
+            plots.plot_coefficients_mach,
+            plots.plot_dynamic_pressure_altitude,
+            plots.plot_specific_force_time,
         ],
     )
     def test_returns_figure_with_provenance_stamp(self, flight_data, plotter) -> None:
@@ -85,6 +88,36 @@ class TestSaveStandardPlots:
         for path in written:
             assert path.is_file()
             assert path.stat().st_size > 0
+
+
+class TestNewChannelPlots:
+    """The three trajectory-channel plots: real content, PNG save, labeled axes."""
+
+    def test_coefficients_mach_traces_flight(self, flight_data, tmp_path) -> None:
+        target = tmp_path / "cd_cl_mach.png"
+        figure = plots.plot_coefficients_mach(flight_data, target)
+        axes = figure.axes[0]
+        # Two coefficient traces plus the entry/end flight-point markers.
+        assert len(axes.lines) >= 4
+        assert target.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+    def test_dynamic_pressure_altitude_axes(self, flight_data, tmp_path) -> None:
+        target = tmp_path / "q_alt.png"
+        figure = plots.plot_dynamic_pressure_altitude(flight_data, target)
+        axes = figure.axes[0]
+        assert "Dynamic pressure" in axes.get_xlabel()
+        assert "Altitude" in axes.get_ylabel()
+        assert target.is_file() and target.stat().st_size > 0
+
+    def test_specific_force_decomposition_three_series(self, flight_data, tmp_path) -> None:
+        target = tmp_path / "specific_force.png"
+        figure = plots.plot_specific_force_time(flight_data, target)
+        axes = figure.axes[0]
+        labels = [line.get_label() for line in axes.lines]
+        assert any("axial" in label for label in labels)
+        assert any("lateral" in label for label in labels)
+        assert any("RSS" in label for label in labels)
+        assert target.is_file() and target.stat().st_size > 0
 
 
 class TestHeadlessDiscipline:

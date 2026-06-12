@@ -21,6 +21,7 @@ forward-only wall like everything else.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -36,6 +37,9 @@ __all__ = [
     "plot_g_load_time",
     "plot_heat_rate_time",
     "plot_ground_track",
+    "plot_coefficients_mach",
+    "plot_dynamic_pressure_altitude",
+    "plot_specific_force_time",
     "save_standard_plots",
 ]
 
@@ -138,6 +142,85 @@ def plot_ground_track(flight_data: FlightData, path: Path | str | None = None) -
     axes.set_xlabel(str(fd.TYPE_LONGITUDE))
     axes.set_ylabel(str(fd.TYPE_LATITUDE))
     axes.set_title("Ground track")
+    axes.grid(True, alpha=0.3)
+    _stamp_provenance(figure, flight_data)
+    figure.set_layout_engine("tight")
+    if path is not None:
+        figure.savefig(path)
+    return figure
+
+
+def plot_coefficients_mach(flight_data: FlightData, path: Path | str | None = None) -> "Figure":
+    """CD and CL vs. Mach, with the flight point traced along the trajectory.
+
+    Both coefficient histories are plotted against the Mach history (the line IS the
+    flight trace through coefficient-Mach space), with the entry and end flight points
+    marked so the direction of the traverse is readable.
+    """
+    branch = _primary_branch(flight_data)
+    mach = branch.get(fd.TYPE_MACH)
+    cd = branch.get(fd.TYPE_DRAG_COEFFICIENT)
+    cl = branch.get(fd.TYPE_LIFT_COEFFICIENT)
+
+    figure = _new_figure()
+    axes = figure.subplots()
+    axes.plot(mach, cd, linewidth=1.2, label=str(fd.TYPE_DRAG_COEFFICIENT))
+    axes.plot(mach, cl, linewidth=1.2, label=str(fd.TYPE_LIFT_COEFFICIENT))
+    if mach and cd:
+        axes.plot(mach[0], cd[0], marker="^", color="tab:green", label="entry")
+        axes.plot(mach[-1], cd[-1], marker="v", color="tab:red", label="end")
+    axes.legend(loc="best", fontsize=8)
+    axes.set_xlabel(str(fd.TYPE_MACH))
+    axes.set_ylabel("Coefficient")
+    axes.set_title("CD and CL vs. Mach (flight trace)")
+    axes.grid(True, alpha=0.3)
+    _stamp_provenance(figure, flight_data)
+    figure.set_layout_engine("tight")
+    if path is not None:
+        figure.savefig(path)
+    return figure
+
+
+def plot_dynamic_pressure_altitude(
+    flight_data: FlightData, path: Path | str | None = None
+) -> "Figure":
+    """Dynamic pressure vs. altitude (altitude on the vertical axis, entry style)."""
+    branch = _primary_branch(flight_data)
+    figure = _new_figure()
+    axes = figure.subplots()
+    axes.plot(
+        branch.get(fd.TYPE_DYNAMIC_PRESSURE), branch.get(fd.TYPE_ALTITUDE), linewidth=1.2
+    )
+    axes.set_xlabel(str(fd.TYPE_DYNAMIC_PRESSURE))
+    axes.set_ylabel(str(fd.TYPE_ALTITUDE))
+    axes.set_title("Dynamic pressure vs. altitude")
+    axes.grid(True, alpha=0.3)
+    _stamp_provenance(figure, flight_data)
+    figure.set_layout_engine("tight")
+    if path is not None:
+        figure.savefig(path)
+    return figure
+
+
+def plot_specific_force_time(
+    flight_data: FlightData, path: Path | str | None = None
+) -> "Figure":
+    """Specific-force decomposition vs. time: axial, lateral, and their RSS."""
+    branch = _primary_branch(flight_data)
+    time = branch.get(fd.TYPE_TIME)
+    axial = branch.get(fd.TYPE_SPECIFIC_FORCE_AXIAL)
+    lateral = branch.get(fd.TYPE_SPECIFIC_FORCE_LATERAL)
+    rss = [math.hypot(a, l) for a, l in zip(axial, lateral)]
+
+    figure = _new_figure()
+    axes = figure.subplots()
+    axes.plot(time, axial, linewidth=1.2, label="axial (drag axis)")
+    axes.plot(time, lateral, linewidth=1.2, label="lateral (lift axis)")
+    axes.plot(time, rss, linewidth=1.0, linestyle="--", label="RSS (sensed)")
+    axes.legend(loc="best", fontsize=8)
+    axes.set_xlabel(str(fd.TYPE_TIME))
+    axes.set_ylabel("Specific force (m/s^2)")
+    axes.set_title("Specific force decomposition vs. time")
     axes.grid(True, alpha=0.3)
     _stamp_provenance(figure, flight_data)
     figure.set_layout_engine("tight")
