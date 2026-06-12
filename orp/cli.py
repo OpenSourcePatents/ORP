@@ -26,7 +26,6 @@ save — sessions always record the planet-relative state the engine consumed).
 from __future__ import annotations
 
 import argparse
-import csv
 import dataclasses
 import math
 import os
@@ -303,11 +302,13 @@ def _cmd_run(args: argparse.Namespace) -> int:
     result = engine.simulate(conditions)
 
     # --- outputs ------------------------------------------------------------
+    from orp.core.report import render_provenance_report, write_trajectory_csv
+
     try:
         out.mkdir(parents=True, exist_ok=True)
     except OSError as error:
         raise _Refusal(f"cannot create --out directory {out}: {error}") from None
-    _write_trajectory_csv(result, out / "trajectory.csv")
+    write_trajectory_csv(result, out / "trajectory.csv")
 
     # plots.py is Figure-based (never pyplot), headless by construction; the env var
     # additionally pins any future backend selection to Agg without importing matplotlib.
@@ -320,12 +321,14 @@ def _cmd_run(args: argparse.Namespace) -> int:
         vehicle_name=args.vehicle,
         schedule_source=schedule_source,
     )
-    _write_provenance_txt(
-        out / "provenance.txt",
-        result=result,
-        conditions=conditions,
-        engine=engine,
-        vehicle_name=args.vehicle,
+    (out / "provenance.txt").write_text(
+        render_provenance_report(
+            result=result,
+            conditions=conditions,
+            engine=engine,
+            vehicle_name=args.vehicle,
+        ),
+        encoding="utf-8",
     )
 
     # --- closing summary ----------------------------------------------------
@@ -353,89 +356,6 @@ def _cmd_run(args: argparse.Namespace) -> int:
     print(f"Run provenance (weakest link): {result.provenance.level.name}")
     print(f"Outputs written to {out}")
     return 0
-
-
-def _write_trajectory_csv(result: object, path: Path) -> None:
-    """Write every FlightData channel; one header row with each channel's unit."""
-    from orp.core.simulation import flight_data as fd
-
-    branch = result.get_branch(0)  # type: ignore[attr-defined]
-    columns = [(dtype, branch.get(dtype)) for dtype in fd.ALL_TYPES]
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.writer(handle, lineterminator="\n")
-        writer.writerow([str(dtype) for dtype, _ in columns])  # e.g. "Altitude (m)"
-        for i in range(branch.length):
-            # repr() is the shortest round-trip representation: deterministic and exact.
-            writer.writerow([repr(series[i]) for _, series in columns])
-
-
-def _format_tag(tag: object) -> str:
-    """LEVEL <source> (ProvenanceTag.__str__), stable for reports."""
-    return str(tag)
-
-
-def _write_provenance_txt(
-    path: Path,
-    *,
-    result: object,
-    conditions: object,
-    engine: object,
-    vehicle_name: str,
-) -> None:
-    """The run's provenance report: weakest link first, then every component."""
-    lines: list[str] = []
-    # First line: the run's weakest-link level exactly as the engine reported it on
-    # the trajectory (conditions weakest-link folded with the stepper's EOM tag).
-    lines.append(f"Run weakest-link provenance: {result.provenance.level.name}")  # type: ignore[attr-defined]
-    lines.append(
-        "(weakest link across vehicle, planet environment models, aerodynamics, "
-        "bank schedule, and equations of motion, as reported on the trajectory)"
-    )
-    lines.append("")
-
-    vehicle = conditions.vehicle  # type: ignore[attr-defined]
-    lines.append(f"[vehicle: {vehicle_name} ({vehicle.name})]")
-    lines.append(f"  overall (weakest link): {_format_tag(vehicle.provenance)}")
-    tagged = vehicle.tagged_values()
-    for prop, tv in sorted(tagged.items(), key=lambda kv: (kv[1].provenance.level.rank, kv[0])):
-        lines.append(f"  {prop}: {_format_tag(tv.provenance)}")
-        if tv.provenance.notes:
-            lines.append(f"      notes: {tv.provenance.notes}")
-    lines.append("")
-
-    planet = conditions.planet  # type: ignore[attr-defined]
-    lines.append(f"[planet: {planet.name}]")
-    lines.append(f"  environment (weakest link): {_format_tag(planet.provenance)}")
-    lines.append(f"  atmosphere: {_format_tag(planet.atmosphere.provenance)}")
-    if planet.atmosphere.provenance.notes:
-        lines.append(f"      notes: {planet.atmosphere.provenance.notes}")
-    lines.append(f"  gravity: {_format_tag(planet.gravity.provenance)}")
-    if planet.gravity.provenance.notes:
-        lines.append(f"      notes: {planet.gravity.provenance.notes}")
-    lines.append("")
-
-    aero = conditions.aerodynamic_calculator  # type: ignore[attr-defined]
-    lines.append("[aerodynamics]")
-    lines.append(f"  {type(aero).__name__}: {_format_tag(aero.provenance)}")
-    if aero.provenance.notes:
-        lines.append(f"      notes: {aero.provenance.notes}")
-    lines.append("")
-
-    stepper = engine.stepper  # type: ignore[attr-defined]
-    lines.append("[equations of motion]")
-    lines.append(f"  {type(stepper).__name__}: {_format_tag(stepper.provenance)}")
-    if stepper.provenance.notes:
-        lines.append(f"      notes: {stepper.provenance.notes}")
-    lines.append("")
-
-    schedule = conditions.bank_schedule  # type: ignore[attr-defined]
-    lines.append("[bank schedule]")
-    lines.append(f"  {_format_tag(schedule.provenance)}")
-    if schedule.provenance.notes:
-        lines.append(f"      notes: {schedule.provenance.notes}")
-    lines.append("")
-
-    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -476,108 +396,15 @@ def _cmd_vehicles(args: argparse.Namespace) -> int:
 def _cmd_gates(args: argparse.Namespace) -> int:
     """Run the gates; print each status exactly as the gate states it; exit 0 only
     when every gate reports its own pinned expected status (an honest FAIL that the
-    gate's tests pin counts as expected)."""
-    from orp.gates import gate3_artemis as g3
-    from orp.gates import gate3_artemis_replay as gr
-    from orp.gates import gate_stardust as gs
+    gate's tests pin counts as expected). Evaluation lives in orp.gates.summary,
+    shared with every other front end so the wording can never drift."""
+    from orp.gates.summary import evaluate_gates
 
-    rows: list[tuple[str, bool]] = []  # (printed line, matches pinned expectation)
-
-    # --- Gate 3 scaffold (Artemis I) — pinned by orp/tests/test_gate3_artemis.py ----
-    deviations: list[str] = []
-    if g3.GATE3_STATUS != "NOT_VALIDATED":
-        deviations.append(
-            f"GATE3_STATUS is {g3.GATE3_STATUS!r}; pinned expectation is 'NOT_VALIDATED'"
-        )
-    if g3.lateral_corridor_check()["within_corridor"] is not True:
-        deviations.append("lateral corridor check no longer holds")
-    try:
-        g3.bank_schedule()
-        deviations.append(
-            "bank_schedule() no longer refuses (the un-locked sign convention is pinned)"
-        )
-    except NotImplementedError:
-        pass
-    line = f"GATE 3: Artemis I (Orion) skip entry  --  STATUS: {g3.GATE3_STATUS}"
-    if deviations:
-        line += f"  [UNEXPECTED DEVIATION: {'; '.join(deviations)}]"
-    rows.append((line, not deviations))
-
-    # --- Stardust gate — pinned by orp/tests/test_gate_stardust.py -------------------
-    deviations = []
-    if gs.GATE_STARDUST_STATUS != "NOT_VALIDATED":
-        deviations.append(
-            f"GATE_STARDUST_STATUS is {gs.GATE_STARDUST_STATUS!r}; "
-            "pinned expectation is 'NOT_VALIDATED'"
-        )
-    entry = gs.run_entry(28.5)
-    if abs(entry["peak_g"] - gs.TRUTH_PEAK_G) > gs.TRUTH_PEAK_G_3SIGMA:
-        deviations.append(
-            f"peak g {entry['peak_g']:.2f} no longer within the flight 3-sigma "
-            f"({gs.TRUTH_PEAK_G} +/- {gs.TRUTH_PEAK_G_3SIGMA})"
-        )
-    line = f"GATE: Stardust SRC ballistic entry  --  STATUS: {gs.GATE_STARDUST_STATUS}"
-    if deviations:
-        line += f"  [UNEXPECTED DEVIATION: {'; '.join(deviations)}]"
-    rows.append((line, not deviations))
-
-    # --- Gate 3 replay (Artemis I digitized bank) — honest FAIL pinned by
-    # orp/tests/test_gate3_replay.py; verdict wording from docs/gates/gate3_artemis_replay.md:
-    # "FAIL against the pre-registered tolerances", sign "NOT LOCKED",
-    # "The gate stays NOT_VALIDATED". Re-evaluated here, never reworded. ----------------
-    replay = gr.run_replay(mass_kg=10160.5, lift_to_drag=0.25, sign=+1.0)
-    flight_ballistic_s = g3.TABLE2_PHASE_TIMES["PredGuid Ballistic"][0]
-    deviations = []
-    if not (replay["dipped_and_rose"] and not replay["returned"]):
-        deviations.append("the replay now returns from the first pass (pinned: it does not)")
-    if not replay["skip_apogee_kft"] > 10 * gr.SKIP_APOGEE_KFT_FLIGHT:
-        deviations.append(
-            f"skip apogee {replay['skip_apogee_kft']:.0f} kft no longer >10x flight "
-            f"(pinned divergence)"
-        )
-    if not all(ep is None for ep in replay["endpoints"].values()):
-        deviations.append("a Table-4 altitude crossing is now reached (pinned: none)")
-    if not (
-        replay["t_drag_fall6_s"] is not None
-        and abs(replay["t_drag_fall6_s"] - flight_ballistic_s) > gr.TOL_PHASE_PROXY_S_NOMINAL
-    ):
-        deviations.append(
-            "the phase proxy now agrees within the pre-registered tolerance "
-            "(pinned: it does not)"
-        )
-    line = (
-        "GATE 3 REPLAY: Artemis I digitized bank command, forward replay  --  STATUS: "
-        "FAIL against the pre-registered tolerances; bank-sign convention NOT LOCKED; "
-        "the gate stays NOT_VALIDATED"
-    )
-    if deviations:
-        line = (
-            "GATE 3 REPLAY: Artemis I digitized bank command, forward replay  --  "
-            f"STATUS: UNEXPECTED DEVIATION from the pinned honest FAIL: "
-            f"{'; '.join(deviations)}"
-        )
-    rows.append((line, not deviations))
-
-    # --- report -----------------------------------------------------------------------
-    for line, _ in rows:
-        print(line)
-    # A gate counts as validated only if its own status says neither NOT_VALIDATED
-    # nor FAIL — derived from the status text, so this line tracks future gates.
-    validated = sum(
-        1 for line, _ in rows if "NOT_VALIDATED" not in line and "FAIL" not in line
-    )
-    scaffolded = len(rows) - validated
-    all_expected = all(ok for _, ok in rows)
-    closing = (
-        "all gates report their pinned expected statuses."
-        if all_expected
-        else "UNEXPECTED DEVIATION from the pinned statuses detected."
-    )
-    print(
-        f"Summary: {validated} of {len(rows)} gates validated, "
-        f"{scaffolded} scaffolded or honest-FAIL; {closing}"
-    )
-    return 0 if all_expected else 1
+    report = evaluate_gates()
+    for row in report.rows:
+        print(row.line)
+    print(report.summary_line)
+    return 0 if report.all_expected else 1
 
 
 # ---------------------------------------------------------------------------
