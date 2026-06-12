@@ -80,8 +80,16 @@ def _line_plot(
     *,
     title: str,
     path: Path | str | None,
+    stamp_provenance: bool = True,
 ) -> "Figure":
-    """Shared single-channel-vs-channel line plot with provenance stamp."""
+    """Shared single-channel-vs-channel line plot.
+
+    ``stamp_provenance`` controls the figure-level provenance stamp. It defaults to
+    stamped — a figure written to disk must carry its own provenance — and is set
+    False only by displays that already carry the provenance prominently themselves
+    (the GUI's colored per-tab banner). Always an explicit per-call parameter, never
+    a global toggle.
+    """
     branch = _primary_branch(flight_data)
     figure = _new_figure()
     axes = figure.subplots()
@@ -90,43 +98,73 @@ def _line_plot(
     axes.set_ylabel(str(y_type))
     axes.set_title(title)
     axes.grid(True, alpha=0.3)
-    _stamp_provenance(figure, flight_data)
+    if stamp_provenance:
+        _stamp_provenance(figure, flight_data)
     figure.set_layout_engine("tight")
     if path is not None:
         figure.savefig(path)
     return figure
 
 
-def plot_altitude_time(flight_data: FlightData, path: Path | str | None = None) -> "Figure":
+def plot_altitude_time(
+    flight_data: FlightData,
+    path: Path | str | None = None,
+    *,
+    stamp_provenance: bool = True,
+) -> "Figure":
     """Altitude vs. time. Saves to ``path`` if given; returns the Figure either way."""
     return _line_plot(
-        flight_data, fd.TYPE_TIME, fd.TYPE_ALTITUDE, title="Altitude vs. time", path=path
+        flight_data, fd.TYPE_TIME, fd.TYPE_ALTITUDE, title="Altitude vs. time",
+        path=path, stamp_provenance=stamp_provenance,
     )
 
 
-def plot_velocity_time(flight_data: FlightData, path: Path | str | None = None) -> "Figure":
+def plot_velocity_time(
+    flight_data: FlightData,
+    path: Path | str | None = None,
+    *,
+    stamp_provenance: bool = True,
+) -> "Figure":
     """Planet-relative speed vs. time."""
     return _line_plot(
-        flight_data, fd.TYPE_TIME, fd.TYPE_VELOCITY, title="Velocity vs. time", path=path
+        flight_data, fd.TYPE_TIME, fd.TYPE_VELOCITY, title="Velocity vs. time",
+        path=path, stamp_provenance=stamp_provenance,
     )
 
 
-def plot_g_load_time(flight_data: FlightData, path: Path | str | None = None) -> "Figure":
+def plot_g_load_time(
+    flight_data: FlightData,
+    path: Path | str | None = None,
+    *,
+    stamp_provenance: bool = True,
+) -> "Figure":
     """Sensed deceleration (g) vs. time."""
     return _line_plot(
-        flight_data, fd.TYPE_TIME, fd.TYPE_DECELERATION, title="Sensed g-load vs. time", path=path
+        flight_data, fd.TYPE_TIME, fd.TYPE_DECELERATION, title="Sensed g-load vs. time",
+        path=path, stamp_provenance=stamp_provenance,
     )
 
 
-def plot_heat_rate_time(flight_data: FlightData, path: Path | str | None = None) -> "Figure":
+def plot_heat_rate_time(
+    flight_data: FlightData,
+    path: Path | str | None = None,
+    *,
+    stamp_provenance: bool = True,
+) -> "Figure":
     """Stagnation-point convective heat rate vs. time."""
     return _line_plot(
         flight_data, fd.TYPE_TIME, fd.TYPE_HEAT_RATE,
         title="Stagnation heat rate vs. time", path=path,
+        stamp_provenance=stamp_provenance,
     )
 
 
-def plot_ground_track(flight_data: FlightData, path: Path | str | None = None) -> "Figure":
+def plot_ground_track(
+    flight_data: FlightData,
+    path: Path | str | None = None,
+    *,
+    stamp_provenance: bool = True,
+) -> "Figure":
     """Ground track: latitude vs. longitude (degrees), entry point marked."""
     branch = _primary_branch(flight_data)
     longitude = branch.get(fd.TYPE_LONGITUDE)
@@ -143,14 +181,20 @@ def plot_ground_track(flight_data: FlightData, path: Path | str | None = None) -
     axes.set_ylabel(str(fd.TYPE_LATITUDE))
     axes.set_title("Ground track")
     axes.grid(True, alpha=0.3)
-    _stamp_provenance(figure, flight_data)
+    if stamp_provenance:
+        _stamp_provenance(figure, flight_data)
     figure.set_layout_engine("tight")
     if path is not None:
         figure.savefig(path)
     return figure
 
 
-def plot_coefficients_mach(flight_data: FlightData, path: Path | str | None = None) -> "Figure":
+def plot_coefficients_mach(
+    flight_data: FlightData,
+    path: Path | str | None = None,
+    *,
+    stamp_provenance: bool = True,
+) -> "Figure":
     """CD and CL vs. Mach, with the flight point traced along the trajectory.
 
     Both coefficient histories are plotted against the Mach history (the line IS the
@@ -174,7 +218,8 @@ def plot_coefficients_mach(flight_data: FlightData, path: Path | str | None = No
     axes.set_ylabel("Coefficient")
     axes.set_title("CD and CL vs. Mach (flight trace)")
     axes.grid(True, alpha=0.3)
-    _stamp_provenance(figure, flight_data)
+    if stamp_provenance:
+        _stamp_provenance(figure, flight_data)
     figure.set_layout_engine("tight")
     if path is not None:
         figure.savefig(path)
@@ -182,7 +227,10 @@ def plot_coefficients_mach(flight_data: FlightData, path: Path | str | None = No
 
 
 def plot_dynamic_pressure_altitude(
-    flight_data: FlightData, path: Path | str | None = None
+    flight_data: FlightData,
+    path: Path | str | None = None,
+    *,
+    stamp_provenance: bool = True,
 ) -> "Figure":
     """Dynamic pressure vs. altitude (altitude on the vertical axis, entry style)."""
     branch = _primary_branch(flight_data)
@@ -195,7 +243,8 @@ def plot_dynamic_pressure_altitude(
     axes.set_ylabel(str(fd.TYPE_ALTITUDE))
     axes.set_title("Dynamic pressure vs. altitude")
     axes.grid(True, alpha=0.3)
-    _stamp_provenance(figure, flight_data)
+    if stamp_provenance:
+        _stamp_provenance(figure, flight_data)
     figure.set_layout_engine("tight")
     if path is not None:
         figure.savefig(path)
@@ -203,7 +252,10 @@ def plot_dynamic_pressure_altitude(
 
 
 def plot_specific_force_time(
-    flight_data: FlightData, path: Path | str | None = None
+    flight_data: FlightData,
+    path: Path | str | None = None,
+    *,
+    stamp_provenance: bool = True,
 ) -> "Figure":
     """Specific-force decomposition vs. time: axial, lateral, and their RSS."""
     branch = _primary_branch(flight_data)
@@ -222,7 +274,8 @@ def plot_specific_force_time(
     axes.set_ylabel("Specific force (m/s^2)")
     axes.set_title("Specific force decomposition vs. time")
     axes.grid(True, alpha=0.3)
-    _stamp_provenance(figure, flight_data)
+    if stamp_provenance:
+        _stamp_provenance(figure, flight_data)
     figure.set_layout_engine("tight")
     if path is not None:
         figure.savefig(path)

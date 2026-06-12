@@ -68,6 +68,27 @@ class TestIndividualPlots:
         # The stamp names the run's weakest-link level — printed on the artifact itself.
         assert flight_data.provenance.level.name in stamps[0]
 
+    @pytest.mark.parametrize(
+        "plotter",
+        [
+            plots.plot_altitude_time,
+            plots.plot_velocity_time,
+            plots.plot_g_load_time,
+            plots.plot_heat_rate_time,
+            plots.plot_ground_track,
+            plots.plot_coefficients_mach,
+            plots.plot_dynamic_pressure_altitude,
+            plots.plot_specific_force_time,
+        ],
+    )
+    def test_stamp_suppressed_only_on_explicit_request(self, flight_data, plotter) -> None:
+        """stamp_provenance=False drops the figure stamp (for displays that carry
+        the provenance prominently themselves); the default stays stamped."""
+        unstamped = plotter(flight_data, stamp_provenance=False)
+        assert not [t for t in _stamp_texts(unstamped) if t.startswith("Provenance:")]
+        stamped = plotter(flight_data)
+        assert [t for t in _stamp_texts(stamped) if t.startswith("Provenance:")]
+
     def test_saves_png_when_path_given(self, flight_data, tmp_path) -> None:
         target = tmp_path / "altitude.png"
         plots.plot_altitude_time(flight_data, target)

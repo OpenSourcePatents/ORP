@@ -190,7 +190,11 @@ class ResultsPanel(QWidget):
                 f"background-color: {banner_color.name()}; color: white; "
                 "padding: 3px; font-weight: bold;"
             )
-            figure = getattr(plots, function_name)(state.flight_data)
+            # The colored banner above is the single in-GUI provenance display;
+            # the figure-level stamp stays on every figure written to disk.
+            figure = getattr(plots, function_name)(
+                state.flight_data, stamp_provenance=False
+            )
             canvas = FigureCanvasQTAgg(figure)
             page_layout.addWidget(canvas, stretch=1)
 

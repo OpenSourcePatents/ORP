@@ -108,6 +108,14 @@ class TestEndToEndThroughAppState:
                 assert figure.axes, f"{function_name}: figure has no axes"
                 axes = figure.axes[0]
                 assert axes.lines, f"{function_name}: figure has no plotted data"
+                # The banner is the single in-GUI provenance display: GUI-rendered
+                # figures carry no figure-level stamp (disk-written figures keep it).
+                stamps = [
+                    t.get_text()
+                    for t in figure.texts
+                    if t.get_text().startswith("Provenance:")
+                ]
+                assert not stamps, f"{function_name}: duplicated provenance stamp"
 
             # Landing summary populated with units.
             summary = window.results_panel.summary_table
