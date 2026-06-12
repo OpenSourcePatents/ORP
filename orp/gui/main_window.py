@@ -124,3 +124,19 @@ class MainWindow(QMainWindow):
         self.conditions_panel.set_running(False)
         self.results_panel.message_label.setText(f"Run refused/failed: {message}")
         self.statusBar().showMessage("Run did not complete.")
+
+
+def main() -> int:
+    """Launch the ORP desktop interface (also reachable as ``orp gui``)."""
+    from PyQt6.QtWidgets import QApplication
+
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    window = MainWindow(AppState())
+    window.show()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

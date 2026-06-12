@@ -151,6 +151,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     vehicles.set_defaults(func=_cmd_vehicles)
 
+    # ----- orp gui ---------------------------------------------------------
+    gui = subparsers.add_parser(
+        "gui",
+        help="launch the ORP desktop interface (needs the gui extra)",
+        description=(
+            "Launch the ORP desktop interface (PyQt6). Requires the optional gui "
+            "dependencies: pip install orp[gui]."
+        ),
+    )
+    gui.set_defaults(func=_cmd_gui)
+
     # ----- orp gates -------------------------------------------------------
     gates = subparsers.add_parser(
         "gates",
@@ -387,6 +398,32 @@ def _cmd_vehicles(args: argparse.Namespace) -> int:
             print(f"    {prop}: {tv.provenance.level.name}{source}")
         print()
     return 0
+
+
+# ---------------------------------------------------------------------------
+# orp gui
+# ---------------------------------------------------------------------------
+
+def _cmd_gui(args: argparse.Namespace) -> int:
+    """Launch the desktop interface. PyQt6 is imported lazily HERE so that run,
+    vehicles, and gates keep working when the gui extra is not installed."""
+    try:
+        from PyQt6.QtWidgets import QApplication
+    except ImportError:
+        raise _Refusal(
+            "the desktop interface needs PyQt6, which is not installed; "
+            "install it with: pip install orp[gui]"
+        ) from None
+
+    from orp.gui.app_state import AppState
+    from orp.gui.main_window import MainWindow
+
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    window = MainWindow(AppState())
+    window.show()
+    return app.exec()
 
 
 # ---------------------------------------------------------------------------

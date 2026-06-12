@@ -421,6 +421,39 @@ class TestGatesCommand:
 
 
 # ---------------------------------------------------------------------------
+# orp gui (launch path only; the GUI itself is tested in test_gui*.py)
+# ---------------------------------------------------------------------------
+
+class TestGuiSubcommand:
+    def test_gui_appears_in_parser_tree(self) -> None:
+        """'orp gui' is a real subcommand — and therefore the UI wall test below
+        walks its help text automatically."""
+        parser = build_parser()
+        subcommand_choices: list[str] = []
+        for action in parser._actions:
+            choices = getattr(action, "choices", None)
+            if isinstance(choices, dict):
+                subcommand_choices.extend(choices.keys())
+        assert "gui" in subcommand_choices
+
+    def test_missing_pyqt6_is_one_line_refusal(
+        self, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """With PyQt6 unimportable, 'orp gui' refuses in one plain-language line
+        naming pip install orp[gui] — no display, no QApplication, no traceback."""
+        import sys
+
+        monkeypatch.setitem(sys.modules, "PyQt6", None)
+        monkeypatch.setitem(sys.modules, "PyQt6.QtWidgets", None)
+        rc = main(["gui"])
+        captured = capsys.readouterr()
+        assert rc != 0
+        assert "Traceback" not in captured.err
+        [line] = [ln for ln in captured.err.splitlines() if ln.strip()]
+        assert "pip install orp[gui]" in line
+
+
+# ---------------------------------------------------------------------------
 # THE UI WALL — never to be weakened.
 # ---------------------------------------------------------------------------
 
