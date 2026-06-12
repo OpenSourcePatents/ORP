@@ -17,6 +17,7 @@ the worker finishes.
 from __future__ import annotations
 
 from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QMainWindow, QProgressBar, QSplitter, QStatusBar
 
 from orp.gui.app_state import AppState
@@ -25,6 +26,10 @@ from orp.gui.results_panel import ResultsPanel
 from orp.gui.vehicle_panel import VehiclePanel
 
 __all__ = ["MainWindow", "RunWorker"]
+
+#: Default splitter proportions (vehicle | conditions | results), restored by
+#: View -> Reset Layout. Nothing is persisted; every launch starts from these.
+_DEFAULT_SPLITTER_SIZES = [320, 380, 560]
 
 
 class RunWorker(QThread):
@@ -63,6 +68,8 @@ class MainWindow(QMainWindow):
 
         self._splitter = QSplitter(self)
         self._splitter.setObjectName("orp_panel_splitter")
+        # Drag the dividers to resize; drag fully to collapse a panel in place.
+        self._splitter.setChildrenCollapsible(True)
         self.setCentralWidget(self._splitter)
 
         status = QStatusBar(self)
@@ -93,6 +100,43 @@ class MainWindow(QMainWindow):
         self._splitter.addWidget(self.results_panel)
 
         self.conditions_panel.run_requested.connect(self.start_run)
+
+        self._splitter.setSizes(list(_DEFAULT_SPLITTER_SIZES))
+        self._build_view_menu()
+
+    def _build_view_menu(self) -> None:
+        """View menu: one checkable action per panel, plus Reset Layout.
+
+        Action names are exactly Vehicle / Conditions / Results / Reset Layout (the
+        GUI wall test walks QAction text automatically).
+        """
+        self.view_menu = self.menuBar().addMenu("View")
+        self.view_menu.setObjectName("view_menu")
+        self.panel_actions: dict[str, QAction] = {}
+        for name, panel in (
+            ("Vehicle", self.vehicle_panel),
+            ("Conditions", self.conditions_panel),
+            ("Results", self.results_panel),
+        ):
+            action = QAction(name, self)
+            action.setObjectName(f"view_toggle_{name.lower()}")
+            action.setCheckable(True)
+            action.setChecked(True)
+            action.toggled.connect(panel.setVisible)
+            self.view_menu.addAction(action)
+            self.panel_actions[name] = action
+
+        self.view_menu.addSeparator()
+        self.reset_layout_action = QAction("Reset Layout", self)
+        self.reset_layout_action.setObjectName("view_reset_layout")
+        self.reset_layout_action.triggered.connect(self.reset_layout)
+        self.view_menu.addAction(self.reset_layout_action)
+
+    def reset_layout(self) -> None:
+        """Restore the default arrangement: all panels shown, default proportions."""
+        for action in self.panel_actions.values():
+            action.setChecked(True)  # toggled -> setVisible(True)
+        self._splitter.setSizes(list(_DEFAULT_SPLITTER_SIZES))
 
     # ----- run orchestration --------------------------------------------------------
 

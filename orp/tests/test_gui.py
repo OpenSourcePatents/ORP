@@ -250,6 +250,71 @@ class TestThreadedRun:
 
 
 # ---------------------------------------------------------------------------
+# Panel layout: resizable splitter, View-menu visibility toggles, Reset Layout
+# ---------------------------------------------------------------------------
+
+class TestPanelLayout:
+    def test_view_actions_hide_and_reshow_each_panel(self, qapp: QApplication) -> None:
+        window = MainWindow(AppState())
+        window.show()
+        try:
+            panels = {
+                "Vehicle": window.vehicle_panel,
+                "Conditions": window.conditions_panel,
+                "Results": window.results_panel,
+            }
+            assert set(window.panel_actions) == set(panels)
+            for name, panel in panels.items():
+                action = window.panel_actions[name]
+                assert action.text() == name  # exact names; walked by the GUI wall
+                assert action.isCheckable() and action.isChecked()
+                assert panel.isVisible()
+                action.setChecked(False)
+                assert not panel.isVisible(), f"{name} did not hide"
+                action.setChecked(True)
+                assert panel.isVisible(), f"{name} did not come back"
+        finally:
+            window.close()
+            window.deleteLater()
+
+    def test_splitter_handles_exist_for_resizing(self, qapp: QApplication) -> None:
+        window = MainWindow(AppState())
+        window.show()
+        try:
+            splitter = window._splitter
+            assert splitter.count() == 3
+            assert splitter.childrenCollapsible()
+            # Handles 1 and 2 are the draggable dividers between the three panels.
+            assert splitter.handle(1) is not None
+            assert splitter.handle(2) is not None
+            assert all(size > 0 for size in splitter.sizes())
+        finally:
+            window.close()
+            window.deleteLater()
+
+    def test_reset_layout_restores_default_arrangement(
+        self, qapp: QApplication
+    ) -> None:
+        window = MainWindow(AppState())
+        window.show()
+        try:
+            assert window.reset_layout_action.text() == "Reset Layout"
+            window.panel_actions["Vehicle"].setChecked(False)
+            window.panel_actions["Results"].setChecked(False)
+            window._splitter.setSizes([50, 900, 50])
+            window.reset_layout_action.trigger()
+            for name, action in window.panel_actions.items():
+                assert action.isChecked(), f"{name} not re-checked by Reset Layout"
+            assert window.vehicle_panel.isVisible()
+            assert window.conditions_panel.isVisible()
+            assert window.results_panel.isVisible()
+            assert all(size > 0 for size in window._splitter.sizes())
+        finally:
+            window.close()
+            window.deleteLater()
+
+
+# ---------------------------------------------------------------------------
 # THE GUI WALL on the fully populated window
 # ---------------------------------------------------------------------------
 
