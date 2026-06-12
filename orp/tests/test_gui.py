@@ -49,6 +49,23 @@ def qapp() -> QApplication:
     return app
 
 
+@pytest.fixture(autouse=True)
+def _flush_deferred_deletes(qapp: QApplication):
+    """Process deleteLater() backlogs after every test.
+
+    Plot refreshes replace FigureCanvasQTAgg widgets via deleteLater; without an
+    event loop those deferred deletions pile up and Qt tears them down in an
+    arbitrary order at interpreter exit, which crashes the process on Windows
+    (0xC0000409). Flushing per-test keeps destruction deterministic.
+    """
+    yield
+    from PyQt6.QtCore import QCoreApplication, QEvent
+
+    qapp.processEvents()
+    QCoreApplication.sendPostedEvents(None, int(QEvent.Type.DeferredDelete))
+    qapp.processEvents()
+
+
 def _fast_state() -> AppState:
     """Apollo / Earth / constant 60 deg, short and coarse so tests stay quick."""
     state = AppState()
@@ -478,6 +495,55 @@ class TestRunsMenu:
             actions[1].trigger()
             assert state.flight_data is second
         finally:
+            window.deleteLater()
+
+
+# ---------------------------------------------------------------------------
+# Dark mode
+# ---------------------------------------------------------------------------
+
+class TestDarkMode:
+    def test_dark_flips_palette_and_figures_and_light_restores(
+        self, qapp: QApplication
+    ) -> None:
+        from PyQt6.QtGui import QPalette
+
+        state = _fast_state()
+        window = MainWindow(state)
+        try:
+            state.run_simulation()
+            window.results_panel.refresh(state)
+
+            def window_color() -> str:
+                return qapp.palette().color(QPalette.ColorRole.Window).name()
+
+            def first_figure_facecolor() -> tuple:
+                page = next(iter(window.results_panel._plot_pages.values()))
+                return page.layout().itemAt(1).widget().figure.get_facecolor()
+
+            default_color = window_color()
+            light_face = first_figure_facecolor()
+            assert window.theme == "light"
+            assert window.theme_actions["Light"].isChecked()
+
+            window.theme_actions["Dark"].trigger()
+            assert window.theme == "dark"
+            assert window_color() == "#353535"
+            dark_face = first_figure_facecolor()
+            assert dark_face != light_face
+            assert dark_face[:3] == pytest.approx((0.0, 0.0, 0.0))  # dark_background
+            # Every plot tab re-rendered to the dark style.
+            for page in window.results_panel._plot_pages.values():
+                face = page.layout().itemAt(1).widget().figure.get_facecolor()
+                assert face[:3] == pytest.approx((0.0, 0.0, 0.0))
+
+            window.theme_actions["Light"].trigger()
+            assert window.theme == "light"
+            assert window_color() == default_color
+            assert first_figure_facecolor() == pytest.approx(light_face)
+        finally:
+            # Never leak a dark palette/style into other tests.
+            window.apply_theme("light")
             window.deleteLater()
 
 

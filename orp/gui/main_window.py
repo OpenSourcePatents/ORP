@@ -17,8 +17,8 @@ the worker finishes.
 from __future__ import annotations
 
 from PyQt6.QtCore import QThread, pyqtSignal
-from PyQt6.QtGui import QAction, QActionGroup
-from PyQt6.QtWidgets import QMainWindow, QProgressBar, QSplitter, QStatusBar
+from PyQt6.QtGui import QAction, QActionGroup, QColor, QPalette
+from PyQt6.QtWidgets import QApplication, QMainWindow, QProgressBar, QSplitter, QStatusBar
 
 from orp.gui.app_state import AppState
 from orp.gui.conditions_panel import ConditionsPanel
@@ -30,6 +30,29 @@ __all__ = ["MainWindow", "RunWorker"]
 #: Default splitter proportions (vehicle | conditions | results), restored by
 #: View -> Reset Layout. Nothing is persisted; every launch starts from these.
 _DEFAULT_SPLITTER_SIZES = [320, 380, 560]
+
+
+def _dark_palette() -> QPalette:
+    """A standard Qt dark scheme (applied app-wide by Settings -> Theme -> Dark)."""
+    palette = QPalette()
+    window = QColor(53, 53, 53)
+    base = QColor(35, 35, 35)
+    highlight = QColor(42, 130, 218)
+    palette.setColor(QPalette.ColorRole.Window, window)
+    palette.setColor(QPalette.ColorRole.WindowText, QColor("white"))
+    palette.setColor(QPalette.ColorRole.Base, base)
+    palette.setColor(QPalette.ColorRole.AlternateBase, window)
+    palette.setColor(QPalette.ColorRole.ToolTipBase, base)
+    palette.setColor(QPalette.ColorRole.ToolTipText, QColor("white"))
+    palette.setColor(QPalette.ColorRole.Text, QColor("white"))
+    palette.setColor(QPalette.ColorRole.PlaceholderText, QColor(160, 160, 160))
+    palette.setColor(QPalette.ColorRole.Button, window)
+    palette.setColor(QPalette.ColorRole.ButtonText, QColor("white"))
+    palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 84, 84))
+    palette.setColor(QPalette.ColorRole.Link, highlight)
+    palette.setColor(QPalette.ColorRole.Highlight, highlight)
+    palette.setColor(QPalette.ColorRole.HighlightedText, QColor("black"))
+    return palette
 
 
 class RunWorker(QThread):
@@ -105,6 +128,7 @@ class MainWindow(QMainWindow):
         self._build_file_menu()
         self._build_runs_menu()
         self._build_view_menu()
+        self._build_settings_menu()
 
     def _build_file_menu(self) -> None:
         """File menu: Save Session / Export Trajectory CSV (same slots as the
@@ -210,6 +234,48 @@ class MainWindow(QMainWindow):
         for action in self.panel_actions.values():
             action.setChecked(True)  # toggled -> setVisible(True)
         self._splitter.setSizes(list(_DEFAULT_SPLITTER_SIZES))
+
+    def _build_settings_menu(self) -> None:
+        """Settings menu: a Theme submenu with exclusive Light/Dark (light on launch;
+        nothing persisted yet — layout/theme memory comes later together)."""
+        self._default_palette = QApplication.instance().palette()
+        self.theme = "light"
+
+        self.settings_menu = self.menuBar().addMenu("Settings")
+        self.settings_menu.setObjectName("settings_menu")
+        self.theme_menu = self.settings_menu.addMenu("Theme")
+        self.theme_menu.setObjectName("theme_menu")
+
+        group = QActionGroup(self)
+        group.setExclusive(True)
+        self.theme_actions: dict[str, QAction] = {}
+        for name in ("Light", "Dark"):
+            action = QAction(name, self)
+            action.setObjectName(f"theme_{name.lower()}")
+            action.setCheckable(True)
+            action.triggered.connect(
+                lambda _checked=False, theme=name.lower(): self.apply_theme(theme)
+            )
+            group.addAction(action)
+            self.theme_menu.addAction(action)
+            self.theme_actions[name] = action
+        self.theme_actions["Light"].setChecked(True)
+
+    def apply_theme(self, theme: str) -> None:
+        """Apply the Qt palette and the matching matplotlib style, then re-render
+        the plot tabs so the figures flip with the chrome."""
+        import matplotlib.style
+
+        app = QApplication.instance()
+        if theme == "dark":
+            app.setPalette(_dark_palette())
+            matplotlib.style.use("dark_background")
+        else:
+            app.setPalette(self._default_palette)
+            matplotlib.style.use("default")
+        self.theme = theme
+        if self.state.flight_data is not None:
+            self.results_panel.refresh(self.state)  # all eight tabs re-render
 
     # ----- run orchestration --------------------------------------------------------
 
