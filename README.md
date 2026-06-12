@@ -32,6 +32,17 @@ says so rather than rounding up.
 `orp gates` runs the validation gates and reports their statuses exactly as the gates
 state them (today: scaffolded / honest-FAIL, none validated).
 
+The desktop interface (PyQt6) launches with either:
+
+```text
+$ orp gui
+$ python -m orp.gui.main_window
+```
+
+It needs the optional GUI dependencies — install them with `pip install orp[gui]`
+(without them, `orp gui` refuses with that hint while `run`, `vehicles`, and `gates`
+keep working).
+
 ### Replaying a recorded bank history (`--bank-csv` / `BankSchedule.from_csv`)
 
 `from_csv` loads a two-column CSV — time in seconds, commanded bank angle in degrees —
