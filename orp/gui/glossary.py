@@ -133,6 +133,16 @@ GLOSSARY: dict[str, str] = {
         "planet models, aerodynamics, bank schedule, and equations of motion — "
         "quoting one strong component would launder the weak ones."
     ),
+    # ----- feedback ------------------------------------------------------------------
+    "feedback": (
+        "Report Bug / Feedback opens a pre-filled GitHub issue in your browser. "
+        "Pre-filled, and nothing more: the ORP version, your operating system name "
+        "and release, your Python version, and - from the app - the vehicle name, "
+        "planet, frame, schedule source type, and the last run's weakest-link "
+        "provenance level. Never file paths, usernames, or session contents. The "
+        "first line asks you to review and edit; nothing is sent until you submit "
+        "the issue on GitHub yourself."
+    ),
     # ----- results summary ---------------------------------------------------------
     "peak deceleration": (
         "The largest sensed aerodynamic load of the run, in standard g. It is the "

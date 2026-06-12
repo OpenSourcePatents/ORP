@@ -63,9 +63,16 @@ class ResultsPanel(QWidget):
         self.setObjectName("results_panel")
         layout = QVBoxLayout(self)
 
+        heading_row = QHBoxLayout()
         heading = QLabel("Results", self)
         heading.setObjectName("results_panel_heading")
-        layout.addWidget(heading)
+        heading_row.addWidget(heading)
+        heading_row.addStretch(1)
+        self.feedback_button = QPushButton("Report Bug / Feedback", self)
+        self.feedback_button.setObjectName("feedback_button_results")
+        heading_row.addWidget(self.feedback_button)
+        heading_row.addWidget(InfoIcon("feedback", self))
+        layout.addLayout(heading_row)
 
         self.message_label = QLabel("No run yet.", self)
         self.message_label.setObjectName("results_message_label")

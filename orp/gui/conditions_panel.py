@@ -54,9 +54,15 @@ class ConditionsPanel(QWidget):
         self.setObjectName("conditions_panel")
         layout = QVBoxLayout(self)
 
+        heading_row = QHBoxLayout()
         heading_label = QLabel("Entry conditions", self)
         heading_label.setObjectName("conditions_panel_heading")
-        layout.addWidget(heading_label)
+        heading_row.addWidget(heading_label)
+        heading_row.addStretch(1)
+        self.feedback_button = QPushButton("Report Bug / Feedback", self)
+        self.feedback_button.setObjectName("feedback_button_conditions")
+        heading_row.addWidget(self.feedback_button)
+        layout.addLayout(heading_row)
 
         # ----- entry state fields ----------------------------------------------------
         form = QFormLayout()

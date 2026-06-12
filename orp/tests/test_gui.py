@@ -673,6 +673,121 @@ class TestGlossary:
 
 
 # ---------------------------------------------------------------------------
+# Feedback: one URL builder, buttons on every panel, Help menu
+# ---------------------------------------------------------------------------
+
+class TestFeedback:
+    def test_url_well_formed_with_version_and_the_five_allowed_fields(self) -> None:
+        from urllib.parse import parse_qs, urlparse
+
+        import orp
+        from orp.gui.feedback import feedback_url
+
+        state = _fast_state()
+        state.run_simulation()
+        url = feedback_url(state)
+
+        parsed = urlparse(url)
+        assert parsed.scheme == "https"
+        assert parsed.netloc == "github.com"
+        assert parsed.path == "/OpenSourcePatents/ORP/issues/new"
+        query = parse_qs(parsed.query)
+        assert query["title"][0].startswith("[GUI feedback]")
+        assert query["labels"] == ["bug"]
+        body = query["body"][0]
+        assert "review and edit" in body.splitlines()[0].lower()  # top line
+        assert f"ORP version: {orp.__version__}" in body
+        assert "- OS: " in body
+        assert "- Python: " in body
+        # The five allowed AppState fields, and only those.
+        assert "- Vehicle: apollo" in body
+        assert "- Planet: earth" in body
+        assert "- Frame: planet-relative" in body
+        assert "- Schedule source type: constant" in body
+        assert "- Last run weakest-link provenance: NOT_VALIDATED" in body
+
+    def test_body_contains_no_paths_or_usernames(self) -> None:
+        import getpass
+        import re
+        from urllib.parse import parse_qs, urlparse
+
+        from orp.gui.feedback import feedback_url
+
+        state = _fast_state()
+        state.run_simulation()
+        body = parse_qs(urlparse(feedback_url(state)).query)["body"][0]
+        assert not re.search(r"[A-Za-z]:\\", body), "Windows path leaked"
+        assert "/home/" not in body and "/Users/" not in body, "Unix path leaked"
+        try:
+            username = getpass.getuser()
+        except Exception:
+            username = ""
+        if username:
+            assert username not in body, "username leaked"
+
+    def test_buttons_on_all_three_panels_and_help_menu_share_one_function(
+        self, qapp: QApplication, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import orp.gui.feedback as feedback_module
+
+        calls: list[object] = []
+        monkeypatch.setattr(
+            feedback_module, "open_feedback",
+            lambda state=None, parent=None: calls.append(state) or True,
+        )
+        window = MainWindow(AppState())
+        try:
+            buttons = [
+                window.vehicle_panel.feedback_button,
+                window.conditions_panel.feedback_button,
+                window.results_panel.feedback_button,
+            ]
+            for button in buttons:
+                assert button.text() == "Report Bug / Feedback"
+                button.click()
+            assert window.feedback_action.text() == "Report Bug / Feedback"
+            window.feedback_action.trigger()
+            assert len(calls) == 4  # three buttons + the Help menu, one function
+            assert all(c is window.state for c in calls)
+        finally:
+            window.deleteLater()
+
+    def test_browser_failure_falls_back_to_copyable_dialog(
+        self, qapp: QApplication, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from PyQt6.QtGui import QDesktopServices
+        from PyQt6.QtWidgets import QMessageBox
+
+        from orp.gui.feedback import open_feedback
+
+        monkeypatch.setattr(
+            QDesktopServices, "openUrl", staticmethod(lambda _url: False)
+        )
+        shown: list[str] = []
+        monkeypatch.setattr(
+            QMessageBox, "exec", lambda self: shown.append(self.informativeText()) or 0
+        )
+        assert open_feedback(None, None) is False
+        assert len(shown) == 1
+        assert shown[0].startswith("https://github.com/OpenSourcePatents/ORP/issues/new?")
+
+    def test_glossary_has_a_feedback_entry_stating_the_prefill(self) -> None:
+        from orp.gui.glossary import GLOSSARY
+
+        entry = GLOSSARY["feedback"]
+        for fragment in (
+            "ORP version",
+            "vehicle name",
+            "planet",
+            "frame",
+            "schedule source type",
+            "weakest-link",
+            "Never file paths, usernames, or session contents",
+        ):
+            assert fragment in entry, f"feedback glossary entry missing {fragment!r}"
+
+
+# ---------------------------------------------------------------------------
 # THE GUI WALL on the fully populated window
 # ---------------------------------------------------------------------------
 

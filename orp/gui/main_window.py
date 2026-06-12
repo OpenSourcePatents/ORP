@@ -129,6 +129,11 @@ class MainWindow(QMainWindow):
         self._build_runs_menu()
         self._build_view_menu()
         self._build_settings_menu()
+        self._build_help_menu()
+
+        # Every feedback affordance calls the same single function.
+        for panel in (self.vehicle_panel, self.conditions_panel, self.results_panel):
+            panel.feedback_button.clicked.connect(self.open_feedback)
 
     def _build_file_menu(self) -> None:
         """File menu: Save Session / Export Trajectory CSV (same slots as the
@@ -260,6 +265,20 @@ class MainWindow(QMainWindow):
             self.theme_menu.addAction(action)
             self.theme_actions[name] = action
         self.theme_actions["Light"].setChecked(True)
+
+    def _build_help_menu(self) -> None:
+        self.help_menu = self.menuBar().addMenu("Help")
+        self.help_menu.setObjectName("help_menu")
+        self.feedback_action = QAction("Report Bug / Feedback", self)
+        self.feedback_action.setObjectName("help_feedback")
+        self.feedback_action.triggered.connect(self.open_feedback)
+        self.help_menu.addAction(self.feedback_action)
+
+    def open_feedback(self) -> None:
+        """Open the pre-filled GitHub issue (one function for every affordance)."""
+        from orp.gui import feedback
+
+        feedback.open_feedback(self.state, self)
 
     def apply_theme(self, theme: str) -> None:
         """Apply the Qt palette and the matching matplotlib style, then re-render

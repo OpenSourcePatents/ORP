@@ -49,7 +49,13 @@ class VehiclePanel(QWidget):
         self.setObjectName("vehicle_panel")
 
         layout = QVBoxLayout(self)
-        layout.addWidget(label_with_info("Vehicle library", "vehicle", self))
+        heading_row = QHBoxLayout()
+        heading_row.addWidget(label_with_info("Vehicle library", "vehicle", self))
+        heading_row.addStretch(1)
+        self.feedback_button = QPushButton("Report Bug / Feedback", self)
+        self.feedback_button.setObjectName("feedback_button_vehicle")
+        heading_row.addWidget(self.feedback_button)
+        layout.addLayout(heading_row)
 
         # Color legend: one chip + (i) per ValidationLevel, worst first — the same
         # five-color code every panel uses.
