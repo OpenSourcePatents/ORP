@@ -8,24 +8,47 @@ read from and write to the state object and call its methods; no widget construc
 physics object directly. The forward-only wall therefore lives in AppState and the
 core — and the GUI surface itself is walked by ``orp/tests/test_gui_wall.py`` (THE GUI
 WALL) to keep endpoint-seeking vocabulary out of every label, tooltip, and menu.
+
+Runs execute on a :class:`RunWorker` QThread (simulation plus the gates refresh), so
+the UI stays responsive; results land in one atomic refresh on the main thread when
+the worker finishes.
 """
 
 from __future__ import annotations
 
-from PyQt6.QtWidgets import (
-    QLabel,
-    QMainWindow,
-    QSplitter,
-    QStatusBar,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtWidgets import QMainWindow, QProgressBar, QSplitter, QStatusBar
 
 from orp.gui.app_state import AppState
 from orp.gui.conditions_panel import ConditionsPanel
+from orp.gui.results_panel import ResultsPanel
 from orp.gui.vehicle_panel import VehiclePanel
 
-__all__ = ["MainWindow"]
+__all__ = ["MainWindow", "RunWorker"]
+
+
+class RunWorker(QThread):
+    """Runs the simulation (and the gates refresh) off the main thread.
+
+    Pure AppState calls — no Qt objects are touched inside :meth:`run`; results are
+    delivered back to the main thread via queued signals.
+    """
+
+    succeeded = pyqtSignal(object)  # the FlightData
+    failed = pyqtSignal(str)
+
+    def __init__(self, state: AppState, parent=None) -> None:
+        super().__init__(parent)
+        self._state = state
+
+    def run(self) -> None:  # executes on the worker thread
+        try:
+            result = self._state.run_simulation()
+            self._state.refresh_gates()
+        except Exception as error:  # surfaced to the user, never swallowed
+            self.failed.emit(str(error))
+            return
+        self.succeeded.emit(result)
 
 
 class MainWindow(QMainWindow):
@@ -34,6 +57,7 @@ class MainWindow(QMainWindow):
     def __init__(self, state: AppState | None = None) -> None:
         super().__init__()
         self.state = state if state is not None else AppState()
+        self._worker: RunWorker | None = None
         self.setWindowTitle("ORP - Open Reentry Platform")
         self.setObjectName("orp_main_window")
 
@@ -47,11 +71,14 @@ class MainWindow(QMainWindow):
         status.showMessage(
             "Forward-only: bank schedules are inputs, trajectories are outputs."
         )
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setObjectName("run_progress_bar")
+        self.progress_bar.setVisible(False)
+        status.addPermanentWidget(self.progress_bar)
 
         self._build_panels()
 
     def _build_panels(self) -> None:
-        """Panels are attached here as they land (vehicle, conditions, results)."""
         self.vehicle_panel = VehiclePanel(self.state, self)
         self._splitter.addWidget(self.vehicle_panel)
 
@@ -62,11 +89,38 @@ class MainWindow(QMainWindow):
             lambda _name: self.conditions_panel.rearm()
         )
 
-        placeholder = QWidget(self)
-        placeholder.setObjectName("orp_panel_placeholder")
-        layout = QVBoxLayout(placeholder)
-        note = QLabel("Results load here after a run.", placeholder)
-        note.setObjectName("orp_placeholder_note")
-        note.setWordWrap(True)
-        layout.addWidget(note)
-        self._splitter.addWidget(placeholder)
+        self.results_panel = ResultsPanel(self.state, self)
+        self._splitter.addWidget(self.results_panel)
+
+        self.conditions_panel.run_requested.connect(self.start_run)
+
+    # ----- run orchestration --------------------------------------------------------
+
+    def start_run(self) -> None:
+        """Launch the worker (no-op if one is already running)."""
+        if self._worker is not None and self._worker.isRunning():
+            return
+        self.conditions_panel.set_running(True)
+        self.progress_bar.setRange(0, 0)  # indeterminate while the engine integrates
+        self.progress_bar.setVisible(True)
+        self.statusBar().showMessage("Running forward simulation...")
+
+        self._worker = RunWorker(self.state, self)
+        self._worker.succeeded.connect(self._run_succeeded)
+        self._worker.failed.connect(self._run_failed)
+        self._worker.start()
+
+    def _run_succeeded(self, _result: object) -> None:
+        self.progress_bar.setVisible(False)
+        self.results_panel.refresh(self.state)  # one atomic pass
+        self.conditions_panel.set_running(False)
+        self.statusBar().showMessage(
+            f"Run complete - weakest-link provenance "
+            f"{self.state.flight_data.provenance.level.name}."
+        )
+
+    def _run_failed(self, message: str) -> None:
+        self.progress_bar.setVisible(False)
+        self.conditions_panel.set_running(False)
+        self.results_panel.message_label.setText(f"Run refused/failed: {message}")
+        self.statusBar().showMessage("Run did not complete.")

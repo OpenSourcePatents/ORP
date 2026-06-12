@@ -298,6 +298,30 @@ class AppState:
             ("Impact velocity", f"{branch.get_last(fd.TYPE_VELOCITY):.2f} m/s"),
         ]
 
+    def provenance_rows(self) -> list[tuple[str, ProvenanceTag]]:
+        """Per-component provenance rows for display (same components as the report)."""
+        if self.conditions is None:
+            return []
+        conditions = self.conditions
+        rows: list[tuple[str, ProvenanceTag]] = []
+        if self.flight_data is not None:
+            rows.append(("run (weakest link)", self.flight_data.provenance))
+        rows.append(
+            (f"vehicle {self.vehicle_name} (overall)", conditions.vehicle.provenance)
+        )
+        tagged = conditions.vehicle.tagged_values()
+        for prop, tv in sorted(
+            tagged.items(), key=lambda kv: (kv[1].provenance.level.rank, kv[0])
+        ):
+            rows.append((f"vehicle.{prop}", tv.provenance))
+        rows.append(("planet environment", conditions.planet.provenance))
+        rows.append(("atmosphere", conditions.planet.atmosphere.provenance))
+        rows.append(("gravity", conditions.planet.gravity.provenance))
+        rows.append(("aerodynamics", conditions.aerodynamic_calculator.provenance))
+        rows.append(("equations of motion", SimulationEngine().stepper.provenance))
+        rows.append(("bank schedule", conditions.bank_schedule.provenance))
+        return rows
+
     def save_session_to(self, path: str | Path) -> None:
         if self.conditions is None or self.schedule_source is None:
             raise ValueError("No completed run to save: run the simulation first.")
