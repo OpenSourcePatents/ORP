@@ -7,6 +7,21 @@ environments (Earth and Mars from day one).
 
 ## Quickstart
 
+### Install
+
+```text
+pip install "orp[gui]"
+```
+
+The `[gui]` extra pulls PyQt6 and matplotlib for the desktop interface and the run
+figures; a plain `pip install orp` covers the core CLI only (no figure output). Note
+for the validation gates: `orp gates` replays digitized flight datasets that live in
+`data/flights/` at the repository root and are not shipped in the package — running
+the flight-replay gates requires a source checkout (clone the repo and run from its
+root; an installed package says so honestly and exits with a distinct code).
+
+### Run
+
 Run one forward reentry (Apollo capsule, Earth, a constant 60° bank command) from the
 repo root:
 
