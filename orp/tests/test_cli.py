@@ -438,6 +438,45 @@ class TestGatesCommand:
 
 
 # ---------------------------------------------------------------------------
+# orp run without matplotlib: graceful degradation to data outputs
+# ---------------------------------------------------------------------------
+
+class TestRunWithoutMatplotlib:
+    def test_degrades_to_data_outputs_with_one_line_notice(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """matplotlib poisoned: the run still succeeds (exit 0), writes the three
+        data outputs, prints exactly one figures-skipped line, and the closing
+        summary still prints. (The matplotlib-present case — all eight outputs,
+        behavior unchanged — is TestEndToEndRun above.)"""
+        import sys
+
+        # Poison the lazy import inside the figure-writing step (the from-import
+        # consults sys.modules first, so None makes it raise ImportError).
+        monkeypatch.setitem(sys.modules, "matplotlib", None)
+        monkeypatch.setitem(sys.modules, "matplotlib.figure", None)
+
+        out_dir = tmp_path / "out"
+        rc = main(_RUN_BASE + ["--out", str(out_dir)])
+        stdout = capsys.readouterr().out
+        assert rc == 0  # the simulation itself succeeded
+
+        for name in ("trajectory.csv", "session.yaml", "provenance.txt"):
+            assert (out_dir / name).is_file(), f"missing data output {name}"
+            assert (out_dir / name).stat().st_size > 0
+        assert not list(out_dir.glob("*.png")), "figures written despite no matplotlib"
+
+        notice_lines = [ln for ln in stdout.splitlines() if "Figures skipped" in ln]
+        assert len(notice_lines) == 1, f"expected exactly one notice:\n{stdout}"
+        assert 'pip install "orp[plot]"' in notice_lines[0]
+        # The closing summary still prints.
+        for fragment in ("Run complete:", "Peak deceleration:",
+                         "Run provenance (weakest link):"):
+            assert fragment in stdout
+
+
+# ---------------------------------------------------------------------------
 # orp gui (launch path only; the GUI itself is tested in test_gui*.py)
 # ---------------------------------------------------------------------------
 

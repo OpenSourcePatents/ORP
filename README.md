@@ -14,7 +14,9 @@ pip install "orp[gui]"
 ```
 
 The `[gui]` extra pulls PyQt6 and matplotlib for the desktop interface and the run
-figures; a plain `pip install orp` covers the core CLI only (no figure output). Note
+figures. The base install runs simulations and writes the data outputs
+(trajectory.csv, session.yaml, provenance.txt); the figures need the `plot` or `gui`
+extra, and a run without matplotlib says so in one line and still exits 0. Note
 for the validation gates: `orp gates` replays digitized flight datasets that live in
 `data/flights/` at the repository root and are not shipped in the package — running
 the flight-replay gates requires a source checkout (clone the repo and run from its

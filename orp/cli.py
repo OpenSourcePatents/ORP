@@ -323,8 +323,16 @@ def _cmd_run(args: argparse.Namespace) -> int:
 
     # plots.py is Figure-based (never pyplot), headless by construction; the env var
     # additionally pins any future backend selection to Agg without importing matplotlib.
+    # matplotlib is imported lazily inside the figure-writing call only: without it the
+    # simulation still succeeded, so the run degrades to data outputs and exits 0.
     os.environ.setdefault("MPLBACKEND", "Agg")
-    plots.save_standard_plots(result, out)
+    try:
+        plots.save_standard_plots(result, out)
+    except ImportError:
+        print(
+            'Figures skipped: matplotlib is not installed; install with '
+            'pip install "orp[plot]" to enable them.'
+        )
 
     save_session(
         out / "session.yaml",
