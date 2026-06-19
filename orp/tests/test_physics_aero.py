@@ -102,8 +102,9 @@ class TestMSLNewtonian:
         assert ld[0] == pytest.approx(0.0, abs=0.01)
         assert ld[1] < ld[2] < ld[3]  # L/D rises with angle of attack
 
-    def test_provenance_verified_cfd(self) -> None:
-        assert self.calc.provenance.level is ValidationLevel.VERIFIED_CFD
+    def test_provenance_verified_source(self) -> None:
+        # Analytical textbook method (Anderson), not a CFD cross-check by this project.
+        assert self.calc.provenance.level is ValidationLevel.VERIFIED_SOURCE
 
 
 class TestFullPhysicsIntegration:

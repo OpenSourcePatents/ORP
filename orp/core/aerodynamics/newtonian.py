@@ -205,11 +205,12 @@ class ModifiedNewtonianCalculator(AerodynamicCalculator):
     @property
     def provenance(self) -> ProvenanceTag:
         return ProvenanceTag(
-            level=ValidationLevel.VERIFIED_CFD,
+            level=ValidationLevel.VERIFIED_SOURCE,
             source="Modified Newtonian theory (Anderson, Hypersonic and High-Temperature Gas Dynamics)",
             notes=(
-                "Cp_max from Rayleigh pitot; sphere-cone surface-pressure integration. Modified "
-                "Newtonian reproduces blunt-body hypersonic C_D and L/D in good agreement with "
-                "CFD/wind-tunnel; least accurate on lee sides and at low Mach."
+                "Implemented from Anderson's published Modified Newtonian formulation; no CFD "
+                "or wind-tunnel comparison was performed by this project. In the literature, "
+                "Modified Newtonian agrees well with CFD/wind-tunnel for blunt-body hypersonic "
+                "C_D and L/D, and is least accurate on lee sides and at low Mach."
             ),
         )
